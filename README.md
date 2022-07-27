@@ -35,7 +35,7 @@ Firefox, Chromium and Thunderbird add-on/WebExtension to open selected URIs, URL
 
 ❤️ Please visit [tealdulcet.com](https://www.tealdulcet.com/) to support this extension and my other software development.
 
-🔜 This will soon be published to Addons.mozilla.org (AMO), Addons.thunderbird.net (ATN) and possibly the Chrome Web Store.
+⬇️ Download from [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/link-creator/) (AMO) and [Addons.thunderbird.net](https://addons.thunderbird.net/thunderbird/addon/link-creator/) (ATN).
 
 Use on Thunderbird requires renaming the [thunderbirdmanifest.json](thunderbirdmanifest.json) file to `manifest.json`.
 Use on Chromium/Chrome requires the downloading the [webextension-polyfill](https://github.com/mozilla/webextension-polyfill) and renaming the [chromemanifest.json](chromemanifest.json) file to `manifest.json`.
