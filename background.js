@@ -52,7 +52,7 @@ const aEMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\
 const EMAILRE = RegExp(aEMAIL, "iu");
 
 // Telephone number regular expression
-const TELRE = /^(?:(?:\+|00|011)[./\s-]*([17]|2[1-69]?\d|3[578]?\d|42?\d|5[09]?\d|6[789]?\d|8[0578]?\d|9[679]?\d)[./\s-]*)?(?:\(([a-z\d]{1,4})\)[./\s-]*)?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?([a-z\d]{1,14})(?:[./;\s-]*e?xt?[./=\s-]*(\d{1,14}))?$/i;
+const TELRE = /^(?:(?:\+|00|011)[./\s-]*([17]|2[1-69]?\d|3[578]?\d|42?\d|5[09]?\d|6[789]?\d|8[0578]?\d|9[679]?\d)[./\s-]*)?(?:\(([a-z\d]{1,4})\)[./\s-]*)?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?([a-z\d]{1,14})(?:[./;\s-]*e?xt?[./=\s-]*(\d{1,14}))?$/iu;
 
 
 const numberFormat = new Intl.NumberFormat();
@@ -75,7 +75,7 @@ const TYPE = Object.freeze({
 });
 
 // URL
-const reURL = /^(?:https?|ftp):$/i;
+const reURL = /^(?:https?|ftp):$/iu;
 
 // Thunderbird
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1641573
@@ -130,10 +130,10 @@ function notification(title, message) {
 	if (settings.send) {
 		console.log(title, message);
 		browser.notifications.create({
-			"type": "basic",
-			"iconUrl": browser.runtime.getURL("icons/icon_128.png"),
-			"title": title,
-			"message": message
+			type: "basic",
+			iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+			title,
+			message
 		});
 	}
 }
@@ -149,7 +149,7 @@ function copyToClipboard(text/* , link */) {
 	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
 	/* const atext = encodeXML(text);
 	const alink = encodeXML(link);
-	
+
 	const html = `<a href="${alink}">${atext}</a>`; */
 
 	navigator.clipboard.writeText(text);
@@ -249,12 +249,12 @@ function validSufix(hostname) {
  * Get URL.
  *
  * @param {string} text
- * @returns {string}
+ * @returns {URL|null}
  */
 function getURL(text) {
 	const aurl = URLRE.exec(text);
 	if (aurl) {
-		text = (!aurl[2] ? `http${settings.https || (aurl[6] && parseInt(aurl[7], 10) === 443) ? "s" : ""}:` : "") + (!aurl[1] ? "//" : "") + text;
+		text = (!aurl[2] ? `http${settings.https || aurl[6] && parseInt(aurl[7], 10) === 443 ? "s" : ""}:` : "") + (!aurl[1] ? "//" : "") + text;
 		const url = new URL(text);
 		if (settings.suffix && suffixes && aurl[5]) {
 			if (validSufix(aurl[5])) {
@@ -271,7 +271,7 @@ function getURL(text) {
  * Get e-mail address.
  *
  * @param {string} text
- * @returns {string}
+ * @returns {string|null}
  */
 function getMail(text) {
 	const amail = EMAILRE.exec(text);
@@ -295,7 +295,7 @@ function getMail(text) {
  * Get telephone number.
  *
  * @param {string} text
- * @returns {string}
+ * @returns {string|null}
  */
 function getTel(text) {
 	const atel = TELRE.exec(text);
@@ -329,7 +329,9 @@ function getTel(text) {
  * @returns {Promise}
  */
 function delay(delay) {
-	return new Promise((resolve) => setTimeout(resolve, delay));
+	return new Promise((resolve) => {
+		setTimeout(resolve, delay);
+	});
 }
 
 /**
@@ -337,7 +339,7 @@ function delay(delay) {
  *
  * @param {Object} info
  * @param {Object} tab
- * @returns {void}
+ * @returns {Promise<void>}
  * @throws {Error}
  */
 async function handleMenuShown(info, tab) {
@@ -361,7 +363,7 @@ async function handleMenuShown(info, tab) {
  *
  * @param {Object} info
  * @param {Object} tab
- * @returns {void}
+ * @returns {Promise<void>}
  * @throws {Error}
  */
 async function handleMenuChoosen(info, tab) {
@@ -427,14 +429,14 @@ async function handleMenuChoosen(info, tab) {
 									fallback(atemp);
 								});
 							} else {
-								browser.tabs.update(tab.id, { "url": atemp }).catch((error) => {
+								browser.tabs.update(tab.id, { url: atemp }).catch((error) => {
 									console.error(error);
 
 									fallback(atemp);
 								});
 							}
 						} else if (aamenuItemId === TYPE.TAB) {
-							browser.tabs.create({ "url": atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
+							browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
 								console.error(error);
 
 								browser.tabs.create({ /* index: tab.index + 1, */ openerTabId: tab.id });
@@ -442,7 +444,7 @@ async function handleMenuChoosen(info, tab) {
 							});
 						} else if (aamenuItemId === TYPE.WINDOW) {
 							try {
-								browser.windows.create({ "url": atemp, incognito: tab.incognito, focused: !settings.background }).catch((error) => {
+								browser.windows.create({ url: atemp, incognito: tab.incognito, focused: !settings.background }).catch((error) => {
 									console.error(error);
 
 									browser.windows.create({ incognito: tab.incognito });
@@ -456,7 +458,7 @@ async function handleMenuChoosen(info, tab) {
 							}
 						} else if (aamenuItemId === TYPE.PRIVATE) {
 							try {
-								browser.windows.create({ "url": atemp, incognito: true, focused: !settings.background }).catch((error) => {
+								browser.windows.create({ url: atemp, incognito: true, focused: !settings.background }).catch((error) => {
 									console.error(error);
 
 									browser.windows.create({ incognito: true });
@@ -471,7 +473,7 @@ async function handleMenuChoosen(info, tab) {
 						} else if (aamenuItemId === TYPE.COPY) {
 							copyToClipboard(atemp, atemp);
 						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Link shared with “${TITLE}”`, "url": atemp });
+							navigator.share({ title: `Link shared with “${TITLE}”`, url: atemp });
 						} else if (aamenuItemId === TYPE.SOURCE) {
 							atemp = `view-source:${atemp}`;
 							if (IS_THUNDERBIRD) {
@@ -483,7 +485,7 @@ async function handleMenuChoosen(info, tab) {
 									fallback(atemp);
 								});
 							} else {
-								browser.tabs.create({ "url": atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id });
+								browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id });
 							}
 						}
 					} else {
@@ -500,12 +502,12 @@ async function handleMenuChoosen(info, tab) {
 								browser.compose.beginNew(null, { to: mail });
 								// browser.windows.openDefaultBrowser(amail);
 							} else {
-								browser.tabs.update(tab.id, { "url": amail });
+								browser.tabs.update(tab.id, { url: amail });
 							}
 						} else if (aamenuItemId === TYPE.COPY) {
 							copyToClipboard(mail, amail);
 						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Email Address shared with “${TITLE}”`, "url": amail });
+							navigator.share({ title: `Email Address shared with “${TITLE}”`, url: amail });
 						}
 					} else {
 						chrome("e-mail address", atext);
@@ -525,7 +527,7 @@ async function handleMenuChoosen(info, tab) {
 									fallback(atel);
 								});
 							} else {
-								browser.tabs.update(tab.id, { "url": atel });
+								browser.tabs.update(tab.id, { url: atel });
 							}
 						} else if (aamenuItemId === TYPE.SMS) {
 							const sms = `sms:${tel}`;
@@ -538,12 +540,12 @@ async function handleMenuChoosen(info, tab) {
 									fallback(sms);
 								});
 							} else {
-								browser.tabs.update(tab.id, { "url": sms });
+								browser.tabs.update(tab.id, { url: sms });
 							}
 						} else if (aamenuItemId === TYPE.COPY) {
 							copyToClipboard(tel, atel);
 						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Telephone Number shared with “${TITLE}”`, "url": atel });
+							navigator.share({ title: `Telephone Number shared with “${TITLE}”`, url: atel });
 						}
 					} else {
 						chrome("telephone number", atext);
@@ -587,19 +589,17 @@ async function handleMenuChoosen(info, tab) {
 
 			if (urls.length > 1) {
 				for (const url of urls) {
-					await browser.tabs.create({ "url": url, active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
+					await browser.tabs.create({ url, active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
 					// aindex += 1;
 					aactive = false;
 					if (settings.delay) {
 						await delay(settings.delay * 1000);
 					}
 				}
+			} else if (settings.newTab) {
+				browser.tabs.create({ url: urls[0], active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
 			} else {
-				if (settings.newTab) {
-					browser.tabs.create({ url: urls[0], active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
-				} else {
-					browser.tabs.update(tab.id, { url: urls[0] });
-				}
+				browser.tabs.update(tab.id, { url: urls[0] });
 			}
 		}
 	}
@@ -611,7 +611,7 @@ async function handleMenuChoosen(info, tab) {
  * @param {string?} [exampleText=null]
  * @param {string?} [linkUrl=null]
  * @param {Object?} [tab=null]
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function buildMenu(exampleText, linkUrl, tab) {
 	console.log(exampleText, linkUrl);
@@ -654,7 +654,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 
 		if (settings.uri) {
 			const aid = `${TYPE.LINK}-${TYPE.URI}`;
-			const avisible = !!uri && (!(settings.urls && url) || url.protocol !== uri.protocol || !!(linkUrl && !exampleText));
+			const avisible = Boolean(uri) && (!(settings.urls && url) || url.protocol !== uri.protocol || Boolean(linkUrl && !exampleText));
 			uri &&= uri.href;
 			// console.log(settings.uri, uri, settings.urls, url, linkUrl, avisible);
 			if (exampleText) {
@@ -688,19 +688,19 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
-					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, "url": uri })
+					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: uri })
 				});
 			}
 		}
 		if (settings.uris) {
 			menus.update(TYPE.ALL, {
 				title: `&Open All ${settings.livePreview && urls ? `${numberFormat.format(urls.length)} ` : ""}Links`,
-				visible: !!urls && urls.length > 1
+				visible: Boolean(urls) && urls.length > 1
 			});
 		}
 		if (settings.urls) {
 			const aid = `${TYPE.LINK}-${TYPE.URL}`;
-			const avisible = !!url && (!!exampleText || !(settings.uri && uri));
+			const avisible = Boolean(url) && (Boolean(exampleText) || !(settings.uri && uri));
 			url &&= url.href;
 			// console.log(settings.uri, uri, settings.urls, url, avisible);
 			if (exampleText) {
@@ -733,26 +733,26 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
-					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, "url": url })
+					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url })
 				});
 			}
 			menus.update(`${aid}-${TYPE.SOURCE}`, {
-				visible: !!url
+				visible: Boolean(url)
 			});
 		}
 		if (settings.mail) {
 			const aid = `${TYPE.LINK}-${TYPE.MAIL}`;
 			menus.update(aid, {
 				title: settings.livePreview && mail ? `&Mail to “${mail.replaceAll("&", "&&")}”` : "&Mail to “%s”",
-				enabled: !!mail
+				enabled: Boolean(mail)
 			});
 			menus.update(`${aid}-${TYPE.COPY}`, {
-				visible: !!mail
+				visible: Boolean(mail)
 			});
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
-					visible: !!mail,
-					enabled: !!mail && navigator.canShare({ title: `Email Address shared with “${TITLE}”`, "url": mail })
+					visible: Boolean(mail),
+					enabled: Boolean(mail) && navigator.canShare({ title: `Email Address shared with “${TITLE}”`, url: mail })
 				});
 			}
 		}
@@ -760,18 +760,18 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			const aid = `${TYPE.LINK}-${TYPE.TEL}`;
 			menus.update(aid, {
 				title: settings.livePreview && tel ? `Call “${tel}”` : "Call “%s”",
-				enabled: !!tel
+				enabled: Boolean(tel)
 			});
 			menus.update(`${aid}-${TYPE.SMS}`, {
-				visible: !!tel
+				visible: Boolean(tel)
 			});
 			menus.update(`${aid}-${TYPE.COPY}`, {
-				visible: !!tel
+				visible: Boolean(tel)
 			});
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
-					visible: !!tel,
-					enabled: !!tel && navigator.canShare({ title: `Telephone Number shared with “${TITLE}”`, "url": tel })
+					visible: Boolean(tel),
+					enabled: Boolean(tel) && navigator.canShare({ title: `Telephone Number shared with “${TITLE}”`, url: tel })
 				});
 			}
 		}
@@ -952,7 +952,7 @@ function getPSL(date) {
 			const PSL = Object.freeze(text.split("\n").map((r) => r.trim()).filter((r) => r.length && !r.startsWith("//")));
 			console.log(PSL.length, date);
 
-			browser.storage.local.set({ "PSL": { PSL, date } });
+			browser.storage.local.set({ PSL: { PSL, date } });
 
 			console.timeLog(label);
 
@@ -1024,7 +1024,7 @@ function traverse(obj) {
 			const length = Object.keys(obj[s]).length;
 			let temp = "";
 
-			if (length > 1 || (length === 1 && !obj[s].leaf)) {
+			if (length > 1 || length === 1 && !obj[s].leaf) {
 				if (obj[s].leaf) {
 					temp += String.raw`(?:${traverse(obj[s])}\.)?`;
 				} else {
@@ -1081,7 +1081,7 @@ function createRegEx(arr) {
 /**
  * Parse public suffix list and create regular expressions.
  *
- * @param {string[]} PSL
+ * @param {readonly string[]} PSL
  * @returns {void}
  */
 function parsePSL(PSL) {
@@ -1103,8 +1103,8 @@ function parsePSL(PSL) {
 
 	console.log(suffixes, exceptions);
 
-	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`);
-	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`);
+	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`, "u");
+	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
 
 	// console.log(suffixes, exceptions);
 }
@@ -1133,7 +1133,7 @@ menus.onClicked.addListener(handleMenuChoosen);
  * Set settings.
  *
  * @param {Object} asettings
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function setSettings(asettings) {
 	settings.urls = asettings.urls;
@@ -1203,7 +1203,7 @@ async function setSettings(asettings) {
  * Init.
  *
  * @public
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function init() {
 	const platformInfo = await browser.runtime.getPlatformInfo();

@@ -52,6 +52,7 @@ Use on Chromium/Chrome requires the downloading the [webextension-polyfill](http
 Pull requests welcome! Ideas for contributions:
 
 * Convert to [Manifest V3](https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/) (MV3)
+* Refactor into more modules
 * Add a test suite for the regular expressions
 * Support more than one top level context menu item (see [bug 1294429](https://bugzilla.mozilla.org/show_bug.cgi?id=1294429))
 * Support directly opening arbitrary URIs in Thunderbird (see [bug 1716200](https://bugzilla.mozilla.org/show_bug.cgi?id=1716200))
