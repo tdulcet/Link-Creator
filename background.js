@@ -326,7 +326,7 @@ function getTel(text) {
  * Delay.
  *
  * @param {number} delay
- * @returns {Promise}
+ * @returns {Promise<void>}
  */
 function delay(delay) {
 	return new Promise((resolve) => {
@@ -936,7 +936,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
  * Get the public suffix list.
  *
  * @param {number} date
- * @returns {Promise}
+ * @returns {Promise<void>}
  */
 function getPSL(date) {
 	console.time(label);
