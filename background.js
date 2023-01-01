@@ -38,18 +38,20 @@ const IPv6address = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){
 
 // URI/IRI regular expression
 const aIRI = String.raw`([a-zA-Z][a-zA-Z\d+.-]*:)(//((?:${iunreserved}|${pct_encoded}|[${sub_delims}:])*@)?(\[${IPv6address}\]|${IPv4address}|(?:${iunreserved}|${pct_encoded}|[${sub_delims}])*)(:\d*)?(?:/${ipchar}*)*|/(?:${ipchar}+(?:/${ipchar}*)*)?|${ipchar}+(?:/${ipchar}*)*)(\?(?:${ipchar}|[${iprivate}/?])*)?(#(?:${ipchar}|[/?])*)?`;
-const IRI = RegExp(aIRI, "gu");
-const IRIRE = RegExp(`^${aIRI}$`, "u");
+const IRI = new RegExp(aIRI, "gu");
+const IRIRE = new RegExp(`^${aIRI}$`, "u");
 
 // URL regular expression
 const aURL = String.raw`(((?:https?|ftp):)?//)?((?:(?:${iunreserved}|${pct_encoded}|[${sub_delims}])+)(?::(?:${iunreserved}|${pct_encoded}|[${sub_delims}:])*)?@)?(\[${IPv6address}\]|${IPv4}|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63}))\.?)(:(\d{1,5}))?((?:/${ipchar}*)*)(\?(?:${ipchar}|[${iprivate}/?])*)?(#(?:${ipchar}|[/?])*)?`;
 // const URL = RegExp(aURL, "iu");
-const URLRE = RegExp(`^${aURL}$`, "iu");
+const URLRE = new RegExp(`^${aURL}$`, "iu");
 
 // E-mail address regular expression
 // \p{Open_Punctuation} \p{Close_Punctuation} \p{Dash_Punctuation} \p{Connector_Punctuation} \p{Math_Symbol}
-const aEMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s]+at[\p{Pe}\s]+|\s*@\s*)(\[(?:IPv6:${IPv6address}|${IPv4})\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s]+dot[\p{Pe}\s]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
-const EMAILRE = RegExp(aEMAIL, "iu");
+const aMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s]+at[\p{Pe}\s]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s]+dot[\p{Pe}\s]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
+const MAILRE = new RegExp(aMAIL, "iu");
+const aEMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
+const EMAILRE = new RegExp(aEMAIL, "iu");
 
 // Telephone number regular expression
 const TELRE = /^(?:(?:\+|00|011)[./\s-]*([17]|2[1-69]?\d|3[578]?\d|42?\d|5[09]?\d|6[789]?\d|8[0578]?\d|9[679]?\d)[./\s-]*)?(?:\(([a-z\d]{1,4})\)[./\s-]*)?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?([a-z\d]{1,14})(?:[./;\s-]*e?xt?[./=\s-]*(\d{1,14}))?$/iu;
@@ -68,6 +70,7 @@ const TYPE = Object.freeze({
 	TAB: "tab",
 	WINDOW: "window",
 	PRIVATE: "private",
+	DOMAIN: "domain",
 	COPY: "copy",
 	SHARE: "share",
 	SOURCE: "source",
@@ -76,6 +79,10 @@ const TYPE = Object.freeze({
 
 // URL
 const reURL = /^(?:https?|ftp):$/iu;
+// Mail to
+const reMail = /^mailto:$/iu;
+// Tel
+const reTel = /^(?:tel|sms):$/iu;
 
 // Thunderbird
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1641573
@@ -254,7 +261,7 @@ function validSufix(hostname) {
 function getURL(text) {
 	const aurl = URLRE.exec(text);
 	if (aurl) {
-		text = (!aurl[2] ? `http${settings.https || aurl[6] && parseInt(aurl[7], 10) === 443 ? "s" : ""}:` : "") + (!aurl[1] ? "//" : "") + text;
+		text = (!aurl[2] ? `http${settings.https || aurl[6] && Number.parseInt(aurl[7], 10) === 443 ? "s" : ""}:` : "") + (!aurl[1] ? "//" : "") + text;
 		const url = new URL(text);
 		if (settings.suffix && suffixes && aurl[5]) {
 			if (validSufix(aurl[5])) {
@@ -273,13 +280,13 @@ function getURL(text) {
  * @param {string} text
  * @returns {string|null}
  */
-function getMail(text) {
-	const amail = EMAILRE.exec(text);
+function getEmail(text) {
+	const amail = MAILRE.exec(text);
 	if (amail) {
-		text = `https://${amail[2].replaceAll(/[\p{Ps}\s]+dot[\p{Pe}\s]+/giu, ".")}`;
-		const hostname = new URL(text).hostname;
-		const mail = `${amail[1]}@${hostname}`;
-		if (settings.suffix && suffixes && amail[3]) {
+		text = amail[3] ? `[${amail[3]}]` : amail[4] || amail[2].replaceAll(/[\p{Ps}\s]+dot[\p{Pe}\s]+/giu, ".");
+		const hostname = new URL(`https://${text}`).hostname;
+		const mail = `${amail[1]}@${amail[3] ? `[IPv6:${hostname.slice(1, -1)}]` : amail[4] ? `[${hostname}]` : hostname}`;
+		if (settings.suffix && suffixes && amail[5]) {
 			if (validSufix(hostname)) {
 				return mail;
 			}
@@ -292,12 +299,43 @@ function getMail(text) {
 }
 
 /**
+ * Get e-mail address.
+ *
+ * @param {URL} text
+ * @returns {string|null}
+ */
+function getMail(text) {
+	if (reMail.test(text.protocol)) {
+		const url = text.href;
+		const qmark = url.indexOf("?");
+		const length = "mailto:".length;
+		return qmark > length ? url.substring(length, qmark) : url.slice(length);
+	}
+	return null;
+}
+
+/**
+ * Get e-mail address hostname.
+ *
+ * @param {string} text
+ * @returns {string|null}
+ */
+function getEmailHost(text) {
+	const amail = EMAILRE.exec(text);
+	if (amail) {
+		text = amail[3] ? `[${amail[3]}]` : amail[4] || amail[2];
+		return getURL(text)?.href;
+	}
+	return null;
+}
+
+/**
  * Get telephone number.
  *
  * @param {string} text
  * @returns {string|null}
  */
-function getTel(text) {
+function getPhone(text) {
 	const atel = TELRE.exec(text);
 	if (atel) {
 		let output = "";
@@ -320,6 +358,38 @@ function getTel(text) {
 		return output;
 	}
 	return null;
+}
+
+/**
+ * Get telephone number.
+ *
+ * @param {URL} text
+ * @returns {string|null}
+ */
+function getTel(text) {
+	if (reTel.test(text.protocol)) {
+		const url = text.href;
+		// return url.slice("tel:".length);
+		const qmark = url.indexOf("?");
+		const length = "tel:".length;
+		return qmark > length ? url.substring(length, qmark) : url.slice(length);
+	}
+	return null;
+}
+
+/**
+ * Open link in Thunderbird.
+ *
+ * @param {string} uri
+ * @returns {Promise}
+ */
+function thunderbird(uri) {
+	return browser.windows.openDefaultBrowser(uri).catch((error) => {
+		console.error(error);
+
+		// browser.windows.openDefaultBrowser("");
+		fallback(uri);
+	});
 }
 
 /**
@@ -348,6 +418,8 @@ async function handleMenuShown(info, tab) {
 
 	// do not show menu entry when no text is selected
 	if (!text && !info.linkUrl) {
+		await menus.removeAll();
+		menus.refresh();
 		return;
 	}
 
@@ -379,7 +451,7 @@ async function handleMenuChoosen(info, tab) {
 
 	const urls = [];
 
-	const [menuItemId, amenuItemId, aamenuItemId] = info.menuItemId.split("-");
+	const [menuItemId, amenuItemId, aamenuItemId, aaamenuItemId] = info.menuItemId.split("-");
 
 	switch (menuItemId) {
 		case TYPE.LINK: {
@@ -403,8 +475,8 @@ async function handleMenuChoosen(info, tab) {
 				} else {
 					url = getURL(text);
 					uri = url;
-					mail = getMail(text);
-					tel = getTel(text);
+					mail = getEmail(text);
+					tel = getPhone(text);
 				}
 			} else if (linkUrl) {
 				uri = new URL(linkUrl);
@@ -418,75 +490,111 @@ async function handleMenuChoosen(info, tab) {
 				case TYPE.URL: {
 					const temp = amenuItemId === TYPE.URI ? uri : url;
 					if (temp) {
+						const addresses = getMail(temp);
 						let atemp = temp.href;
-						if (aamenuItemId === TYPE.GO || aamenuItemId === TYPE.LINK) {
-							if (IS_THUNDERBIRD) {
-								// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
-								browser.windows.openDefaultBrowser(atemp).catch((error) => {
-									console.error(error);
+						switch (aamenuItemId) {
+							case TYPE.GO:
+							case TYPE.LINK: {
+								if (IS_THUNDERBIRD) {
+									// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
+									thunderbird(atemp);
+								} else {
+									browser.tabs.update(tab.id, { url: atemp }).catch((error) => {
+										console.error(error);
 
-									// browser.windows.openDefaultBrowser("");
-									fallback(atemp);
-								});
-							} else {
-								browser.tabs.update(tab.id, { url: atemp }).catch((error) => {
-									console.error(error);
-
-									fallback(atemp);
-								});
+										fallback(atemp);
+									});
+								}
+								break;
 							}
-						} else if (aamenuItemId === TYPE.TAB) {
-							browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
-								console.error(error);
+							case TYPE.TAB: {
+								browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
+									console.error(error);
 
-								browser.tabs.create({ /* index: tab.index + 1, */ openerTabId: tab.id });
-								fallback(atemp);
-							});
-						} else if (aamenuItemId === TYPE.WINDOW) {
-							try {
-								browser.windows.create({ url: atemp, incognito: tab.incognito, focused: !settings.background }).catch((error) => {
+									browser.tabs.create({ /* index: tab.index + 1, */ openerTabId: tab.id });
+									fallback(atemp);
+								});
+								break;
+							}
+							case TYPE.WINDOW: {
+								try {
+									browser.windows.create({ url: atemp, incognito: tab.incognito, focused: !settings.background }).catch((error) => {
+										console.error(error);
+
+										browser.windows.create({ incognito: tab.incognito });
+										fallback(atemp);
+									});
+								} catch (error) {
 									console.error(error);
 
 									browser.windows.create({ incognito: tab.incognito });
 									fallback(atemp);
-								});
-							} catch (error) {
-								console.error(error);
-
-								browser.windows.create({ incognito: tab.incognito });
-								fallback(atemp);
+								}
+								break;
 							}
-						} else if (aamenuItemId === TYPE.PRIVATE) {
-							try {
-								browser.windows.create({ url: atemp, incognito: true, focused: !settings.background }).catch((error) => {
+							case TYPE.PRIVATE: {
+								try {
+									browser.windows.create({ url: atemp, incognito: true, focused: !settings.background }).catch((error) => {
+										console.error(error);
+
+										browser.windows.create({ incognito: true });
+										fallback(atemp);
+									});
+								} catch (error) {
 									console.error(error);
 
 									browser.windows.create({ incognito: true });
 									fallback(atemp);
-								});
-							} catch (error) {
-								console.error(error);
-
-								browser.windows.create({ incognito: true });
-								fallback(atemp);
+								}
+								break;
 							}
-						} else if (aamenuItemId === TYPE.COPY) {
-							copyToClipboard(atemp, atemp);
-						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Link shared with “${TITLE}”`, url: atemp });
-						} else if (aamenuItemId === TYPE.SOURCE) {
-							atemp = `view-source:${atemp}`;
-							if (IS_THUNDERBIRD) {
-								// Does not work
-								browser.windows.openDefaultBrowser(atemp).catch((error) => {
-									console.error(error);
-
-									// browser.windows.openDefaultBrowser("");
-									fallback(atemp);
-								});
-							} else {
-								browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id });
+							case TYPE.DOMAIN: {
+								if (addresses) {
+									const host = getEmailHost(addresses);
+									if (host) {
+										urls.push(host);
+									} else {
+										chrome("e-mail address", atext);
+									}
+								} else {
+									chrome("e-mail address", atext);
+								}
+								break;
 							}
+							case TYPE.COPY: {
+								if (!aaamenuItemId) {
+									copyToClipboard(atemp, atemp);
+								} else if (aaamenuItemId === TYPE.MAIL) {
+									if (addresses) {
+										copyToClipboard(addresses, atemp);
+									} else {
+										chrome("e-mail address", atext);
+									}
+								} else if (aaamenuItemId === TYPE.TEL) {
+									const phone = getTel(temp);
+									if (phone) {
+										copyToClipboard(phone, atemp);
+									} else {
+										chrome("telephone number", atext);
+									}
+								}
+								break;
+							}
+							case TYPE.SHARE: {
+								navigator.share({ title: `Link shared with “${TITLE}”`, url: atemp });
+								break;
+							}
+							case TYPE.SOURCE: {
+								atemp = `view-source:${atemp}`;
+								if (IS_THUNDERBIRD) {
+									// Does not work
+									thunderbird(atemp);
+								} else {
+									browser.tabs.create({ url: atemp, /* index: tab.index + 1, */ openerTabId: tab.id });
+								}
+								break;
+							}
+							// No default
 						}
 					} else {
 						chrome(amenuItemId === TYPE.URI ? "URI/IRI" : "URL", atext);
@@ -504,10 +612,27 @@ async function handleMenuChoosen(info, tab) {
 							} else {
 								browser.tabs.update(tab.id, { url: amail });
 							}
-						} else if (aamenuItemId === TYPE.COPY) {
-							copyToClipboard(mail, amail);
-						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Email Address shared with “${TITLE}”`, url: amail });
+						} else {
+							switch (aamenuItemId) {
+								case TYPE.DOMAIN: {
+									const host = getEmailHost(mail);
+									if (host) {
+										urls.push(host);
+									} else {
+										chrome("e-mail address", atext);
+									}
+									break;
+								}
+								case TYPE.COPY: {
+									copyToClipboard(mail, amail);
+									break;
+								}
+								case TYPE.SHARE: {
+									navigator.share({ title: `Email Address shared with “${TITLE}”`, url: amail });
+									break;
+								}
+								// No default
+							}
 						}
 					} else {
 						chrome("e-mail address", atext);
@@ -520,32 +645,32 @@ async function handleMenuChoosen(info, tab) {
 						if (!aamenuItemId) {
 							if (IS_THUNDERBIRD) {
 								// Does not work
-								browser.windows.openDefaultBrowser(atel).catch((error) => {
-									console.error(error);
-
-									// browser.windows.openDefaultBrowser("");
-									fallback(atel);
-								});
+								thunderbird(atel);
 							} else {
 								browser.tabs.update(tab.id, { url: atel });
 							}
-						} else if (aamenuItemId === TYPE.SMS) {
-							const sms = `sms:${tel}`;
-							if (IS_THUNDERBIRD) {
-								// Does not work
-								browser.windows.openDefaultBrowser(sms).catch((error) => {
-									console.error(error);
-
-									// browser.windows.openDefaultBrowser("");
-									fallback(sms);
-								});
-							} else {
-								browser.tabs.update(tab.id, { url: sms });
+						} else {
+							switch (aamenuItemId) {
+								case TYPE.SMS: {
+									const sms = `sms:${tel}`;
+									if (IS_THUNDERBIRD) {
+										// Does not work
+										thunderbird(sms);
+									} else {
+										browser.tabs.update(tab.id, { url: sms });
+									}
+									break;
+								}
+								case TYPE.COPY: {
+									copyToClipboard(tel, atel);
+									break;
+								}
+								case TYPE.SHARE: {
+									navigator.share({ title: `Telephone Number shared with “${TITLE}”`, url: atel });
+									break;
+								}
+								// No default
 							}
-						} else if (aamenuItemId === TYPE.COPY) {
-							copyToClipboard(tel, atel);
-						} else if (aamenuItemId === TYPE.SHARE) {
-							navigator.share({ title: `Telephone Number shared with “${TITLE}”`, url: atel });
 						}
 					} else {
 						chrome("telephone number", atext);
@@ -571,12 +696,7 @@ async function handleMenuChoosen(info, tab) {
 		if (IS_THUNDERBIRD) {
 			for (const url of urls) {
 				// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
-				await browser.windows.openDefaultBrowser(url).catch((error) => {
-					console.error(error);
-
-					// browser.windows.openDefaultBrowser("");
-					fallback(url);
-				});
+				await thunderbird(url);
 				if (settings.delay) {
 					await delay(settings.delay * 1000);
 				}
@@ -620,7 +740,6 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		let url = null;
 		let mail = null;
 		let tel = null;
-		// let aurl = null;
 		let urls = null;
 
 		if (exampleText) {
@@ -641,8 +760,8 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			} else {
 				url = getURL(exampleText);
 				// uri = url;
-				mail = getMail(exampleText);
-				tel = getTel(exampleText);
+				mail = getEmail(exampleText);
+				tel = getPhone(exampleText);
 			}
 			urls = exampleText.match(IRI);
 		} else if (linkUrl) {
@@ -655,18 +774,21 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		if (settings.uri) {
 			const aid = `${TYPE.LINK}-${TYPE.URI}`;
 			const avisible = Boolean(uri) && (!(settings.urls && url) || url.protocol !== uri.protocol || Boolean(linkUrl && !exampleText));
-			uri &&= uri.href;
+			const addresses = uri && getMail(uri);
+			const host = addresses && getEmailHost(addresses);
+			const phone = uri && getTel(uri);
+			const temp = uri && uri.href;
 			// console.log(settings.uri, uri, settings.urls, url, linkUrl, avisible);
 			if (exampleText) {
 				menus.update(`${aid}-${TYPE.GO}`, {
-					title: `&Go to ${settings.livePreview && uri ? ` “${uri.replaceAll("&", "&&")}”` : "“%s”"}`,
+					title: `&Go to ${settings.livePreview && temp ? `“${temp.replaceAll("&", "&&")}”` : "“%s”"}`,
 					visible: avisible || !settings.urls,
 					enabled: avisible
 				});
 			}
 			if (linkUrl) {
 				menus.update(`${aid}-${TYPE.LINK}`, {
-					title: `&Open Link${settings.livePreview && uri && !exampleText ? ` “${uri.replaceAll("&", "&&")}”` : ""}`,
+					title: `&Open Link${settings.livePreview && temp && !exampleText ? ` “${temp.replaceAll("&", "&&")}”` : ""}`,
 					visible: avisible && !exampleText
 				});
 			}
@@ -682,13 +804,23 @@ async function buildMenu(exampleText, linkUrl, tab) {
 					enabled: avisible && isAllowed
 				});
 			}
+			menus.update(`${aid}-${TYPE.DOMAIN}`, {
+				title: `${TAB}Go to ${settings.livePreview && host ? `“${host.replaceAll("&", "&&")}”` : "domain"}`,
+				visible: avisible && Boolean(host)
+			});
 			menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: avisible
+			});
+			menus.update(`${aid}-${TYPE.COPY}-${TYPE.MAIL}`, {
+				visible: avisible && Boolean(addresses)
+			});
+			menus.update(`${aid}-${TYPE.COPY}-${TYPE.TEL}`, {
+				visible: avisible && Boolean(phone)
 			});
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
-					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: uri })
+					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: temp })
 				});
 			}
 		}
@@ -701,17 +833,17 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		if (settings.urls) {
 			const aid = `${TYPE.LINK}-${TYPE.URL}`;
 			const avisible = Boolean(url) && (Boolean(exampleText) || !(settings.uri && uri));
-			url &&= url.href;
+			const temp = url && url.href;
 			// console.log(settings.uri, uri, settings.urls, url, avisible);
 			if (exampleText) {
 				menus.update(`${aid}-${TYPE.GO}`, {
-					title: settings.livePreview && url ? `&Go to “${url.replaceAll("&", "&&")}”` : "&Go to “%s”",
+					title: settings.livePreview && temp ? `&Go to “${temp.replaceAll("&", "&&")}”` : "&Go to “%s”",
 					enabled: avisible
 				});
 			}
 			if (linkUrl) {
 				menus.update(`${aid}-${TYPE.LINK}`, {
-					title: `&Open Link${settings.livePreview && url && !exampleText ? ` “${url.replaceAll("&", "&&")}”` : ""}`,
+					title: `&Open Link${settings.livePreview && temp && !exampleText ? ` “${temp.replaceAll("&", "&&")}”` : ""}`,
 					visible: avisible && !exampleText
 				});
 			}
@@ -733,18 +865,23 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			if (settings.share && navigator.canShare) {
 				menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
-					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url })
+					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: temp })
 				});
 			}
 			menus.update(`${aid}-${TYPE.SOURCE}`, {
-				visible: Boolean(url)
+				visible: Boolean(temp)
 			});
 		}
 		if (settings.mail) {
 			const aid = `${TYPE.LINK}-${TYPE.MAIL}`;
+			const host = mail && getEmailHost(mail);
 			menus.update(aid, {
 				title: settings.livePreview && mail ? `&Mail to “${mail.replaceAll("&", "&&")}”` : "&Mail to “%s”",
 				enabled: Boolean(mail)
+			});
+			menus.update(`${aid}-${TYPE.DOMAIN}`, {
+				title: `${TAB}Go to ${settings.livePreview && host ? `“${host.replaceAll("&", "&&")}”` : "domain"}`,
+				visible: Boolean(host)
 			});
 			menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: Boolean(mail)
@@ -814,6 +951,16 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				title: IS_THUNDERBIRD ? `${TAB}&Copy Link` : `${TAB}Copy &Link`,
 				contexts: ["selection", "link"]
 			});
+			await menus.create({
+				id: `${aid}-${TYPE.COPY}-${TYPE.MAIL}`,
+				title: IS_THUNDERBIRD ? `${TAB}${TAB}Copy &Email Address` : `${TAB}${TAB}Copy Emai&l Address`,
+				contexts: ["selection", "link"]
+			});
+			await menus.create({
+				id: `${aid}-${TYPE.COPY}-${TYPE.TEL}`,
+				title: `${TAB}${TAB}C&opy Phone Number`,
+				contexts: ["selection", "link"]
+			});
 			if (settings.share && navigator.canShare) {
 				await menus.create({
 					id: `${aid}-${TYPE.SHARE}`,
@@ -863,6 +1010,11 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				}
 			}
 			await menus.create({
+				id: `${aid}-${TYPE.DOMAIN}`,
+				title: `${TAB}Go to domain`,
+				contexts: ["selection", "link"]
+			});
+			await menus.create({
 				id: `${aid}-${TYPE.COPY}`,
 				// title: `${TAB}&Copy Link location`, // Thunderbird
 				// title: `${TAB}Copy &Link address`, // Chrome
@@ -887,6 +1039,11 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			await menus.create({
 				id: aid,
 				title: IS_THUNDERBIRD ? "Compo&se Message to" : "&Mail to",
+				contexts: ["selection"]
+			});
+			await menus.create({
+				id: `${aid}-${TYPE.DOMAIN}`,
+				title: `${TAB}Go to domain`,
 				contexts: ["selection"]
 			});
 			await menus.create({
@@ -916,13 +1073,13 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			});
 			await menus.create({
 				id: `${aid}-${TYPE.COPY}`,
-				title: `${TAB}Copy Telephone Number`,
+				title: `${TAB}C&opy Phone Number`,
 				contexts: ["selection"]
 			});
 			if (settings.share && navigator.canShare) {
 				await menus.create({
 					id: `${aid}-${TYPE.SHARE}`,
-					title: `${TAB}Share Telephone Number`,
+					title: `${TAB}Share Phone Number`,
 					contexts: ["selection"]
 				});
 			}
@@ -967,115 +1124,70 @@ function getPSL(date) {
 }
 
 /**
- * Find common prefix.
+ * Traverse Trie tree of objects to create RegEx.
  *
- * @param {string[]} strs
+ * @param {Object.<string, Object|boolean>} tree
  * @returns {string}
  */
-function prefix(strs) {
-	let prefix = "";
+function createRegEx(tree) {
+	const alternatives = [];
+	const characterClass = [];
 
-	for (const char of strs[0]) {
-		const aprefix = prefix + char;
-		for (const str of strs) {
-			if (!str.startsWith(aprefix)) {
-				return prefix;
+	for (const char in tree) {
+		if (char) {
+			if (!("" in tree[char] && Object.keys(tree[char]).length === 1)) {
+				const recurse = createRegEx(tree[char]);
+				alternatives.push(recurse + char);
+			} else {
+				characterClass.push(char);
 			}
 		}
-		prefix = aprefix;
 	}
 
-	return prefix;
+	if (characterClass.length) {
+		alternatives.push(characterClass.length === 1 ? characterClass[0] : `[${characterClass.join("")}]`);
+	}
+
+	let result = alternatives.length === 1 ? alternatives[0] : `(?:${alternatives.join("|")})`;
+
+	if ("" in tree) {
+		if (characterClass.length || alternatives.length > 1) {
+			result += "?";
+		} else {
+			result = `(?:${result})?`;
+		}
+	}
+
+	return result;
 }
 
 /**
- * Find common suffix.
- *
- * @param {string[]} strs
- * @returns {string}
- */
-function suffix(strs) {
-	let suffix = "";
-
-	for (const char of Array.from(strs[0]).reverse()) {
-		const asuffix = char + suffix;
-		for (const str of strs) {
-			if (!str.endsWith(asuffix)) {
-				return suffix;
-			}
-		}
-		suffix = asuffix;
-	}
-
-	return suffix;
-}
-
-/**
- * Traverse tree of objects to create RegEx.
- *
- * @param {Object} obj
- * @returns {string}
- */
-function traverse(obj) {
-	const array = [];
-
-	for (const s in obj) {
-		if (s !== "leaf") {
-			const length = Object.keys(obj[s]).length;
-			let temp = "";
-
-			if (length > 1 || length === 1 && !obj[s].leaf) {
-				if (obj[s].leaf) {
-					temp += String.raw`(?:${traverse(obj[s])}\.)?`;
-				} else {
-					temp += String.raw`${traverse(obj[s])}\.`;
-				}
-			}
-
-			temp += s.replace("---", "[^.]+");
-			array.push(temp);
-		}
-	}
-
-	if (array.length > 1) {
-		const aprefix = prefix(array);
-		const asuffix = suffix(array);
-
-		if (aprefix.length > 1 || asuffix.length > 1) {
-			return `${aprefix}(?:${array.map((x) => x.slice(aprefix.length, asuffix ? -asuffix.length : x.length)).join("|")})${asuffix}`;
-		}
-
-		return `(?:${array.join("|")})`;
-	}
-
-	return array.join("|");
-}
-
-/**
- * Convert public suffix list into tree of objects.
+ * Convert public suffix list into Trie tree of objects.
  *
  * @param {string[]} arr
  * @returns {string}
  */
-function createRegEx(arr) {
+function createTree(arr) {
 	const tree = {};
 
-	for (const s of arr) {
+	arr.sort((a, b) => b.length - a.length);
+
+	for (const str of arr) {
 		let temp = tree;
 
-		for (const l of punycode(s.replaceAll("*", "---")).split(".").reverse()) {
-			if (!(l in temp)) {
-				temp[l] = {};
+		for (const char of Array.from(punycode(str.replaceAll("*", "---")).replaceAll("---", "*")).reverse()) {
+			if (!(char in temp)) {
+				temp[char] = {};
 			}
-			temp = temp[l];
+			temp = temp[char];
 		}
 
 		// Leaf node
-		temp.leaf = true;
+		temp[""] = true;
 	}
 
 	Object.freeze(tree);
-	return traverse(tree);
+	return createRegEx(tree).replaceAll(".", "\\.").replaceAll("*", "[^.]+");
 }
 
 /**
@@ -1098,8 +1210,8 @@ function parsePSL(PSL) {
 
 	// console.log(suffixes, exceptions);
 
-	suffixes = createRegEx(suffixes);
-	exceptions = createRegEx(exceptions);
+	suffixes = createTree(suffixes);
+	exceptions = createTree(exceptions);
 
 	console.log(suffixes, exceptions);
 
@@ -1145,7 +1257,7 @@ async function setSettings(asettings) {
 	settings.newTab = false;
 	settings.newWindow = false;
 	settings.private = false;
-	switch (parseInt(asettings.disposition, 10)) {
+	switch (Number.parseInt(asettings.disposition, 10)) {
 		case 1:
 			break;
 		case 2:

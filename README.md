@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/tdulcet/Link-Creator/workflows/CI/badge.svg?branch=main)](https://github.com/tdulcet/Link-Creator/actions)
+
 # Link Creator
 Open selected URIs, URLs, email addresses, telephone numbers and links
 
