@@ -1,7 +1,7 @@
 [![Actions Status](https://github.com/tdulcet/Link-Creator/workflows/CI/badge.svg?branch=main)](https://github.com/tdulcet/Link-Creator/actions)
 
 # Link Creator
-Open selected URIs, URLs, email addresses, telephone numbers and links
+Open selected URIs, URLs, e-mail addresses, telephone numbers and links
 
 Copyright © 2021 Teal Dulcet
 
@@ -57,8 +57,9 @@ Pull requests welcome! Ideas for contributions:
 * Refactor into more modules
 * Add a test suite for the regular expressions
 * Support more than one top level context menu item (see [bug 1294429](https://bugzilla.mozilla.org/show_bug.cgi?id=1294429))
-* Support directly opening arbitrary URIs in Thunderbird (see [bug 1716200](https://bugzilla.mozilla.org/show_bug.cgi?id=1716200))
+* Support directly opening arbitrary URIs in Thunderbird (see [bug 1716200](https://bugzilla.mozilla.org/show_bug.cgi?id=1716200) and [bug 1828110](https://bugzilla.mozilla.org/show_bug.cgi?id=1828110))
 * Support directly opening `data:` and other privileged URIs in Firefox (see [bug 1317166](https://bugzilla.mozilla.org/show_bug.cgi?id=1317166) and [bug 1269456](https://bugzilla.mozilla.org/show_bug.cgi?id=1269456))
+* Support directly opening URLs in a private/incognito window in Firefox from Thunderbird (see [bug 1828089](https://bugzilla.mozilla.org/show_bug.cgi?id=1828089))
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
 * Improve the performance
 * Sync settings in Thunderbird (see [bug 446444](https://bugzilla.mozilla.org/show_bug.cgi?id=446444))

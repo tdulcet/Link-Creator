@@ -5,7 +5,8 @@ import * as AddonSettings from "/common/modules/AddonSettings/AddonSettings.js";
 const label = "PSL";
 
 const TITLE = "🔗 Link Creator";
-const TAB = "    ";
+// https://bugzilla.mozilla.org/show_bug.cgi?id=1816870
+const TAB = "\u00A0\u00A0\u00A0\u00A0";
 
 const ALARM = "update";
 
@@ -116,6 +117,8 @@ const settings = {
 	send: null
 };
 
+const notifications = new Map();
+
 let menuIsShown = false;
 
 let isAllowed = null;
@@ -144,6 +147,18 @@ function notification(title, message) {
 		});
 	}
 }
+
+browser.notifications.onClicked.addListener((notificationId) => {
+	const url = notifications.get(notificationId);
+
+	if (url) {
+		browser.tabs.create({ url });
+	}
+});
+
+browser.notifications.onClosed.addListener((notificationId) => {
+	notifications.delete(notificationId);
+});
 
 /**
  * Copy link to clipboard.
@@ -387,7 +402,6 @@ function thunderbird(uri) {
 	return browser.windows.openDefaultBrowser(uri).catch((error) => {
 		console.error(error);
 
-		// browser.windows.openDefaultBrowser("");
 		fallback(uri);
 	});
 }
@@ -495,7 +509,7 @@ async function handleMenuChoosen(info, tab) {
 						switch (aamenuItemId) {
 							case TYPE.GO:
 							case TYPE.LINK: {
-								if (IS_THUNDERBIRD) {
+								if (IS_THUNDERBIRD && url) {
 									// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
 									thunderbird(atemp);
 								} else {
@@ -607,8 +621,8 @@ async function handleMenuChoosen(info, tab) {
 						const amail = `mailto:${encodeURIComponent(mail)}`;
 						if (!aamenuItemId) {
 							if (IS_THUNDERBIRD) {
+								// https://bugzilla.mozilla.org/show_bug.cgi?id=1828102
 								browser.compose.beginNew(null, { to: mail });
-								// browser.windows.openDefaultBrowser(amail);
 							} else {
 								browser.tabs.update(tab.id, { url: amail });
 							}
@@ -643,22 +657,12 @@ async function handleMenuChoosen(info, tab) {
 					if (tel) {
 						const atel = `tel:${tel}`;
 						if (!aamenuItemId) {
-							if (IS_THUNDERBIRD) {
-								// Does not work
-								thunderbird(atel);
-							} else {
-								browser.tabs.update(tab.id, { url: atel });
-							}
+							browser.tabs.update(tab.id, { url: atel });
 						} else {
 							switch (aamenuItemId) {
 								case TYPE.SMS: {
 									const sms = `sms:${tel}`;
-									if (IS_THUNDERBIRD) {
-										// Does not work
-										thunderbird(sms);
-									} else {
-										browser.tabs.update(tab.id, { url: sms });
-									}
+									browser.tabs.update(tab.id, { url: sms });
 									break;
 								}
 								case TYPE.COPY: {
@@ -695,8 +699,13 @@ async function handleMenuChoosen(info, tab) {
 	if (urls.length) {
 		if (IS_THUNDERBIRD) {
 			for (const url of urls) {
-				// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
-				await thunderbird(url);
+				const uri = new URL(url);
+				if (reURL.test(uri.protocol)) {
+					// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
+					await thunderbird(url);
+				} else {
+					await browser.tabs.create({ url });
+				}
 				if (settings.delay) {
 					await delay(settings.delay * 1000);
 				}
@@ -868,9 +877,11 @@ async function buildMenu(exampleText, linkUrl, tab) {
 					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: temp })
 				});
 			}
-			menus.update(`${aid}-${TYPE.SOURCE}`, {
-				visible: Boolean(temp)
-			});
+			if (!IS_THUNDERBIRD) {
+				menus.update(`${aid}-${TYPE.SOURCE}`, {
+					visible: Boolean(temp)
+				});
+			}
 		}
 		if (settings.mail) {
 			const aid = `${TYPE.LINK}-${TYPE.MAIL}`;
@@ -945,6 +956,11 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				}
 			}
 			await menus.create({
+				id: `${aid}-${TYPE.DOMAIN}`,
+				title: `${TAB}Go to domain`,
+				contexts: ["selection", "link"]
+			});
+			await menus.create({
 				id: `${aid}-${TYPE.COPY}`,
 				// title: `${TAB}&Copy Link location`, // Thunderbird
 				// title: `${TAB}Copy &Link address`, // Chrome
@@ -1010,11 +1026,6 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				}
 			}
 			await menus.create({
-				id: `${aid}-${TYPE.DOMAIN}`,
-				title: `${TAB}Go to domain`,
-				contexts: ["selection", "link"]
-			});
-			await menus.create({
 				id: `${aid}-${TYPE.COPY}`,
 				// title: `${TAB}&Copy Link location`, // Thunderbird
 				// title: `${TAB}Copy &Link address`, // Chrome
@@ -1028,11 +1039,13 @@ async function buildMenu(exampleText, linkUrl, tab) {
 					contexts: IS_CHROME || settings.uri ? ["selection"] : ["selection", "link"]
 				});
 			}
-			await menus.create({
-				id: `${aid}-${TYPE.SOURCE}`,
-				title: `${TAB}&View Source`,
-				contexts: ["selection", "link"]
-			});
+			if (!IS_THUNDERBIRD) {
+				await menus.create({
+					id: `${aid}-${TYPE.SOURCE}`,
+					title: `${TAB}&View Source`,
+					contexts: ["selection", "link"]
+				});
+			}
 		}
 		if (settings.mail) {
 			const aid = `${TYPE.LINK}-${TYPE.MAIL}`;
@@ -1093,9 +1106,10 @@ async function buildMenu(exampleText, linkUrl, tab) {
  * Get the public suffix list.
  *
  * @param {number} date
+ * @param {number} [retry]
  * @returns {Promise<void>}
  */
-function getPSL(date) {
+function getPSL(date, retry = 0) {
 	console.time(label);
 	const url = "https://publicsuffix.org/list/public_suffix_list.dat";
 	console.log(url);
@@ -1107,19 +1121,25 @@ function getPSL(date) {
 			console.timeLog(label);
 
 			const PSL = Object.freeze(text.split("\n").map((r) => r.trim()).filter((r) => r.length && !r.startsWith("//")));
-			console.log(PSL.length, date);
+			console.log(PSL.length, new Date(date));
 
 			browser.storage.local.set({ PSL: { PSL, date } });
 
 			console.timeLog(label);
 
 			parsePSL(PSL);
-
-			console.timeEnd(label);
 		} else {
 			console.error(response);
-			console.timeEnd(label);
 		}
+
+		console.timeEnd(label);
+	}).catch(async (error) => {
+		if (retry >= 2) {
+			throw error;
+		}
+		console.error(error);
+		await delay((1 << retry) * 1000);
+		return getPSL(date, retry + 1);
 	});
 }
 
@@ -1197,6 +1217,7 @@ function createTree(arr) {
  * @returns {void}
  */
 function parsePSL(PSL) {
+	const start = performance.now();
 	suffixes = [];
 	exceptions = [];
 
@@ -1219,6 +1240,8 @@ function parsePSL(PSL) {
 	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
 
 	// console.log(suffixes, exceptions);
+	const end = performance.now();
+	console.log(`The PSL was parsed in ${end - start} ms.`);
 }
 
 /**
@@ -1286,7 +1309,7 @@ async function setSettings(asettings) {
 			await browser.storage.local.get(["PSL"]).then((item) => {
 				console.log(item);
 				const d = new Date();
-				const PSL = item.PSL;
+				const { PSL } = item;
 
 				if (PSL) {
 					parsePSL(PSL.PSL);
@@ -1363,3 +1386,36 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 		buildMenu();
 	}
 });
+
+browser.runtime.onInstalled.addListener((details) => {
+	console.log(details);
+
+	const manifest = browser.runtime.getManifest();
+	switch (details.reason) {
+		case "install":
+			notification(`🎉 ${manifest.name} installed`, `Thank you for installing the “${TITLE}” add-on!\nVersion: ${manifest.version}\n\nOpen the options/preferences page to configure this extension.`);
+			break;
+		case "update":
+			if (settings.send) {
+				browser.notifications.create({
+					type: "basic",
+					iconUrl: browser.runtime.getURL("icons/icon_128.png"),
+					title: `✨ ${manifest.name} updated`,
+					message: `The “${TITLE}” add-on has been updated to version ${manifest.version}. Click to see the release notes.\n\n❤️ Huge thanks to the generous donors that have allowed me to continue to work on this extension!`
+				}).then(async (notificationId) => {
+					let url = "";
+					if (browser.runtime.getBrowserInfo) {
+						const browserInfo = await browser.runtime.getBrowserInfo();
+
+						url = browserInfo.name === "Thunderbird" ? `https://addons.thunderbird.net/thunderbird/addon/link-creator/versions/${manifest.version}` : `https://addons.mozilla.org/firefox/addon/link-creator/versions/${manifest.version}`;
+					}
+					if (url) {
+						notifications.set(notificationId, url);
+					}
+				});
+			}
+			break;
+	}
+});
+
+browser.runtime.setUninstallURL("https://forms.gle/M4KvDiA5GopzKeuCA");
