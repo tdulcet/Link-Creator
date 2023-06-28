@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Link Creator",
-  "version": "1.0",
+  "version": "1.1",
   "author": "Teal Dulcet",
 
   "description": "Open selected URIs, URLs, email addresses, telephone numbers and links.",
