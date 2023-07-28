@@ -432,8 +432,9 @@ async function handleMenuShown(info, tab) {
 
 	// do not show menu entry when no text is selected
 	if (!text && !info.linkUrl) {
-		await menus.removeAll();
-		menus.refresh();
+		// await menus.removeAll();
+		// menuIsShown = false;
+		// menus.refresh();
 		return;
 	}
 
