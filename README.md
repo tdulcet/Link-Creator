@@ -60,6 +60,7 @@ Pull requests welcome! Ideas for contributions:
 * Support directly opening arbitrary URIs in Thunderbird (see [bug 1716200](https://bugzilla.mozilla.org/show_bug.cgi?id=1716200) and [bug 1828110](https://bugzilla.mozilla.org/show_bug.cgi?id=1828110))
 * Support directly opening `data:` and other privileged URIs in Firefox (see [bug 1317166](https://bugzilla.mozilla.org/show_bug.cgi?id=1317166) and [bug 1269456](https://bugzilla.mozilla.org/show_bug.cgi?id=1269456))
 * Support directly opening URLs in a private/incognito window in Firefox from Thunderbird (see [bug 1828089](https://bugzilla.mozilla.org/show_bug.cgi?id=1828089))
+* Support e-mail addresses in the message header and compose window in Thunderbird
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
 * Improve the performance
 * Sync settings in Thunderbird (see [bug 446444](https://bugzilla.mozilla.org/show_bug.cgi?id=446444))

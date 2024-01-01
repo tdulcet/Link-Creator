@@ -49,7 +49,7 @@ const URLRE = new RegExp(`^${aURL}$`, "iu");
 
 // E-mail address regular expression
 // \p{Open_Punctuation} \p{Close_Punctuation} \p{Dash_Punctuation} \p{Connector_Punctuation} \p{Math_Symbol}
-const aMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s]+at[\p{Pe}\s]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s]+dot[\p{Pe}\s]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
+const aMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s_]+(?:at|@)[\p{Pe}\s_]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s_]+dot[\p{Pe}\s_]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
 const MAILRE = new RegExp(aMAIL, "iu");
 const aEMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
 const EMAILRE = new RegExp(aEMAIL, "iu");
@@ -276,10 +276,11 @@ function validSufix(hostname) {
 function getURL(text) {
 	const aurl = URLRE.exec(text);
 	if (aurl) {
-		text = (!aurl[2] ? `http${settings.https || aurl[6] && Number.parseInt(aurl[7], 10) === 443 ? "s" : ""}:` : "") + (!aurl[1] ? "//" : "") + text;
+		const [, scheme, authority, , , host, port, aport] = aurl;
+		text = (!authority ? `http${settings.https || port && Number.parseInt(aport, 10) === 443 ? "s" : ""}:` : "") + (!scheme ? "//" : "") + text;
 		const url = new URL(text);
-		if (settings.suffix && suffixes && aurl[5]) {
-			if (validSufix(aurl[5])) {
+		if (settings.suffix && suffixes && host) {
+			if (validSufix(host)) {
 				return url;
 			}
 		} else {
@@ -298,10 +299,11 @@ function getURL(text) {
 function getEmail(text) {
 	const amail = MAILRE.exec(text);
 	if (amail) {
-		text = amail[3] ? `[${amail[3]}]` : amail[4] || amail[2].replaceAll(/[\p{Ps}\s]+dot[\p{Pe}\s]+/giu, ".");
-		const hostname = new URL(`https://${text}`).hostname;
-		const mail = `${amail[1]}@${amail[3] ? `[IPv6:${hostname.slice(1, -1)}]` : amail[4] ? `[${hostname}]` : hostname}`;
-		if (settings.suffix && suffixes && amail[5]) {
+		const [, user, domain, ipv6, ipv4, host] = amail;
+		text = ipv6 ? `[${ipv6}]` : ipv4 || domain.replaceAll(/[\p{Ps}\s_]+dot[\p{Pe}\s_]+/giu, ".");
+		const { hostname } = new URL(`https://${text}`);
+		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
+		if (settings.suffix && suffixes && host) {
 			if (validSufix(hostname)) {
 				return mail;
 			}
@@ -338,7 +340,8 @@ function getMail(text) {
 function getEmailHost(text) {
 	const amail = EMAILRE.exec(text);
 	if (amail) {
-		text = amail[3] ? `[${amail[3]}]` : amail[4] || amail[2];
+		const [, , domain, ipv6, ipv4] = amail;
+		text = ipv6 ? `[${ipv6}]` : ipv4 || domain;
 		return getURL(text)?.href;
 	}
 	return null;
@@ -456,7 +459,7 @@ async function handleMenuShown(info, tab) {
 async function handleMenuChoosen(info, tab) {
 	console.log(info);
 	let text = info.selectionText;
-	const linkUrl = info.linkUrl;
+	const { linkUrl } = info;
 
 	if (!text && !linkUrl) {
 		return;
@@ -479,6 +482,7 @@ async function handleMenuChoosen(info, tab) {
 			if (text) {
 				const iri = IRIRE.exec(text);
 				if (iri) {
+					console.assert(!URL.canParse || URL.canParse(text), "Error: Invalid URI");
 					uri = new URL(text);
 					if (reURL.test(iri[1])) {
 						if (URLRE.test(text)) {
@@ -494,6 +498,7 @@ async function handleMenuChoosen(info, tab) {
 					tel = getPhone(text);
 				}
 			} else if (linkUrl) {
+				console.assert(!URL.canParse || URL.canParse(linkUrl), "Error: Invalid URI");
 				uri = new URL(linkUrl);
 				if (reURL.test(uri.protocol)) {
 					url = uri;
@@ -756,6 +761,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			const iri = IRIRE.exec(exampleText);
 			console.log(iri);
 			if (iri) {
+				console.assert(!URL.canParse || URL.canParse(exampleText), "Error: Invalid URI");
 				uri = new URL(exampleText);
 				if (reURL.test(iri[1])) {
 					// console.log(URLRE.exec(exampleText));
@@ -775,6 +781,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			}
 			urls = exampleText.match(IRI);
 		} else if (linkUrl) {
+			console.assert(!URL.canParse || URL.canParse(linkUrl), "Error: Invalid URI");
 			uri = new URL(linkUrl);
 			if (reURL.test(uri.protocol)) {
 				url = uri;
