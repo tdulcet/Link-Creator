@@ -87,7 +87,7 @@ const reTel = /^(?:tel|sms):$/iu;
 
 // Thunderbird
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1641573
-const IS_THUNDERBIRD = typeof messenger !== "undefined";
+const IS_THUNDERBIRD = Boolean(globalThis.messenger);
 
 // Chrome
 const IS_CHROME = Object.getPrototypeOf(browser) !== Object.prototype;
@@ -277,7 +277,7 @@ function getURL(text) {
 	const aurl = URLRE.exec(text);
 	if (aurl) {
 		const [, scheme, authority, , , host, port, aport] = aurl;
-		text = (!authority ? `http${settings.https || port && Number.parseInt(aport, 10) === 443 ? "s" : ""}:` : "") + (!scheme ? "//" : "") + text;
+		text = (authority ? "" : `http${settings.https || port && Number.parseInt(aport, 10) === 443 ? "s" : ""}:`) + (scheme ? "" : "//") + text;
 		const url = new URL(text);
 		if (settings.suffix && suffixes && host) {
 			if (validSufix(host)) {
@@ -325,7 +325,7 @@ function getMail(text) {
 	if (reMail.test(text.protocol)) {
 		const url = text.href;
 		const qmark = url.indexOf("?");
-		const length = "mailto:".length;
+		const {length} = "mailto:";
 		return qmark > length ? url.substring(length, qmark) : url.slice(length);
 	}
 	return null;
@@ -389,7 +389,7 @@ function getTel(text) {
 		const url = text.href;
 		// return url.slice("tel:".length);
 		const qmark = url.indexOf("?");
-		const length = "tel:".length;
+		const {length} = "tel:";
 		return qmark > length ? url.substring(length, qmark) : url.slice(length);
 	}
 	return null;
@@ -514,7 +514,7 @@ async function handleMenuChoosen(info, tab) {
 						let atemp = temp.href;
 						switch (aamenuItemId) {
 							case TYPE.GO:
-							case TYPE.LINK: {
+							case TYPE.LINK:
 								if (IS_THUNDERBIRD && url) {
 									// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
 									thunderbird(atemp);
@@ -526,7 +526,6 @@ async function handleMenuChoosen(info, tab) {
 									});
 								}
 								break;
-							}
 							case TYPE.TAB: {
 								browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
 									console.error(error);
@@ -536,7 +535,7 @@ async function handleMenuChoosen(info, tab) {
 								});
 								break;
 							}
-							case TYPE.WINDOW: {
+							case TYPE.WINDOW:
 								try {
 									browser.windows.create({ url: atemp, incognito: tab.incognito, focused: !settings.background }).catch((error) => {
 										console.error(error);
@@ -551,8 +550,7 @@ async function handleMenuChoosen(info, tab) {
 									fallback(atemp);
 								}
 								break;
-							}
-							case TYPE.PRIVATE: {
+							case TYPE.PRIVATE:
 								try {
 									browser.windows.create({ url: atemp, incognito: true, focused: !settings.background }).catch((error) => {
 										console.error(error);
@@ -567,8 +565,7 @@ async function handleMenuChoosen(info, tab) {
 									fallback(atemp);
 								}
 								break;
-							}
-							case TYPE.DOMAIN: {
+							case TYPE.DOMAIN:
 								if (addresses) {
 									const host = getEmailHost(addresses);
 									if (host) {
@@ -580,8 +577,7 @@ async function handleMenuChoosen(info, tab) {
 									chrome("e-mail address", atext);
 								}
 								break;
-							}
-							case TYPE.COPY: {
+							case TYPE.COPY:
 								if (!aaamenuItemId) {
 									copyToClipboard(atemp, atemp);
 								} else if (aaamenuItemId === TYPE.MAIL) {
@@ -599,12 +595,10 @@ async function handleMenuChoosen(info, tab) {
 									}
 								}
 								break;
-							}
-							case TYPE.SHARE: {
+							case TYPE.SHARE:
 								navigator.share({ title: `Link shared with “${TITLE}”`, url: atemp });
 								break;
-							}
-							case TYPE.SOURCE: {
+							case TYPE.SOURCE:
 								atemp = `view-source:${atemp}`;
 								if (IS_THUNDERBIRD) {
 									// Does not work
@@ -613,7 +607,6 @@ async function handleMenuChoosen(info, tab) {
 									browser.tabs.create({ url: atemp, /* index: tab.index + 1, */ openerTabId: tab.id });
 								}
 								break;
-							}
 							// No default
 						}
 					} else {
@@ -621,7 +614,7 @@ async function handleMenuChoosen(info, tab) {
 					}
 					break;
 				}
-				case TYPE.MAIL: {
+				case TYPE.MAIL:
 					if (mail) {
 						// This encodes too many characters
 						const amail = `mailto:${encodeURIComponent(mail)}`;
@@ -643,14 +636,12 @@ async function handleMenuChoosen(info, tab) {
 									}
 									break;
 								}
-								case TYPE.COPY: {
+								case TYPE.COPY:
 									copyToClipboard(mail, amail);
 									break;
-								}
-								case TYPE.SHARE: {
+								case TYPE.SHARE:
 									navigator.share({ title: `Email Address shared with “${TITLE}”`, url: amail });
 									break;
-								}
 								// No default
 							}
 						}
@@ -658,8 +649,7 @@ async function handleMenuChoosen(info, tab) {
 						chrome("e-mail address", atext);
 					}
 					break;
-				}
-				case TYPE.TEL: {
+				case TYPE.TEL:
 					if (tel) {
 						const atel = `tel:${tel}`;
 						if (!aamenuItemId) {
@@ -671,14 +661,12 @@ async function handleMenuChoosen(info, tab) {
 									browser.tabs.update(tab.id, { url: sms });
 									break;
 								}
-								case TYPE.COPY: {
+								case TYPE.COPY:
 									copyToClipboard(tel, atel);
 									break;
-								}
-								case TYPE.SHARE: {
+								case TYPE.SHARE:
 									navigator.share({ title: `Telephone Number shared with “${TITLE}”`, url: atel });
 									break;
-								}
 								// No default
 							}
 						}
@@ -686,7 +674,6 @@ async function handleMenuChoosen(info, tab) {
 						chrome("telephone number", atext);
 					}
 					break;
-				}
 			}
 			break;
 		}
@@ -794,7 +781,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			const addresses = uri && getMail(uri);
 			const host = addresses && getEmailHost(addresses);
 			const phone = uri && getTel(uri);
-			const temp = uri && uri.href;
+			const temp = uri?.href;
 			// console.log(settings.uri, uri, settings.urls, url, linkUrl, avisible);
 			if (exampleText) {
 				menus.update(`${aid}-${TYPE.GO}`, {
@@ -850,7 +837,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		if (settings.urls) {
 			const aid = `${TYPE.LINK}-${TYPE.URL}`;
 			const avisible = Boolean(url) && (Boolean(exampleText) || !(settings.uri && uri));
-			const temp = url && url.href;
+			const temp = url?.href;
 			// console.log(settings.uri, uri, settings.urls, url, avisible);
 			if (exampleText) {
 				menus.update(`${aid}-${TYPE.GO}`, {
@@ -1164,11 +1151,11 @@ function createRegEx(tree) {
 	for (const char in tree) {
 		if (char) {
 			const atree = tree[char];
-			if (!("" in atree && Object.keys(atree).length === 1)) {
+			if ("" in atree && Object.keys(atree).length === 1) {
+				characterClass.push(char);
+			} else {
 				const recurse = createRegEx(atree);
 				alternatives.push(recurse + char);
-			} else {
-				characterClass.push(char);
 			}
 		}
 	}

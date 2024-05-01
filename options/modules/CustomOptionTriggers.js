@@ -37,7 +37,7 @@ export async function registerTrigger() {
 	AutomaticSettings.Trigger.registerSave("settings", apply);
 
 	// Thunderbird
-	if (typeof messenger !== "undefined") {
+	if (globalThis.messenger) {
 		document.getElementById("currentTab").disabled = true;
 		document.getElementById("newWindow").disabled = true;
 		document.getElementById("private").disabled = true;
