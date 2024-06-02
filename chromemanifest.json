@@ -36,6 +36,7 @@
     "<all_urls>",
     "contextMenus",
     "alarms",
-    "notifications"
+    "notifications",
+    "clipboardWrite"
   ]
 }

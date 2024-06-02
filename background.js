@@ -51,8 +51,9 @@ const URLRE = new RegExp(`^${aURL}$`, "iu");
 // \p{Open_Punctuation} \p{Close_Punctuation} \p{Dash_Punctuation} \p{Connector_Punctuation} \p{Math_Symbol}
 const aMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s_]+(?:at|@)[\p{Pe}\s_]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s_]+dot[\p{Pe}\s_]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
 const MAILRE = new RegExp(aMAIL, "iu");
-const aEMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
-const EMAILRE = new RegExp(aEMAIL, "iu");
+const aEMAIL = String.raw`((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))`;
+const EMAIL = new RegExp(aEMAIL, "igu");
+const EMAILRE = new RegExp(`^${aEMAIL}$`, "iu");
 
 // Telephone number regular expression
 const TELRE = /^(?:(?:\+|00|011)[./\s-]*([17]|2[1-69]?\d|3[578]?\d|42?\d|5[09]?\d|6[789]?\d|8[0578]?\d|9[679]?\d)[./\s-]*)?(?:\(([a-z\d]{1,4})\)[./\s-]*)?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?(?:([a-z\d]{1,6})[./\s-])?([a-z\d]{1,14})(?:[./;\s-]*e?xt?[./=\s-]*(\d{1,14}))?$/iu;
@@ -104,8 +105,10 @@ const settings = {
 	tel: null,
 	uri: null,
 	uris: null,
+	mails: null,
 	https: null,
 	share: null,
+	single: null,
 	suffix: null,
 	newTab: null,
 	newWindow: null,
@@ -252,17 +255,40 @@ function punycode(hostname) {
  * @param {string} hostname
  * @returns {boolean}
  */
-function validSufix(hostname) {
-	const adomain = punycode(hostname);
-	const regexResult = suffixes.exec(adomain);
-	if (regexResult) {
-		const aregexResult = exceptions.exec(adomain);
-		const labels = hostname.split(".");
-		const alabels = aregexResult ? aregexResult[1].split(".").slice(1) : regexResult[1].split(".");
-		if (labels.length > alabels.length) {
-			console.log(hostname, alabels.join("."));
+function validSuffix(hostname) {
+	if (settings.suffix && suffixes && hostname) {
+		const adomain = punycode(hostname);
+		const regexResult = suffixes.exec(adomain);
+		if (regexResult) {
+			const aregexResult = exceptions.exec(adomain);
+			const labels = hostname.split(".");
+			const alabels = aregexResult ? aregexResult[1].split(".").slice(1) : regexResult[1].split(".");
+			if (labels.length > alabels.length) {
+				console.log(hostname, alabels.join("."));
+				return true;
+			}
+		}
+	} else {
+		return true;
+	}
+	return false;
+}
+
+/**
+ * Check URL.
+ *
+ * @param {string} text
+ * @param {RegExpMatchArray} iri
+ * @returns {boolean}
+ */
+function checkURL(text, iri) {
+	const aurl = URLRE.exec(text);
+	if (aurl) {
+		if (validSuffix(aurl[5])) {
 			return true;
 		}
+	} else {
+		console.error(iri, text);
 	}
 	return false;
 }
@@ -279,11 +305,7 @@ function getURL(text) {
 		const [, scheme, authority, , , host, port, aport] = aurl;
 		text = (authority ? "" : `http${settings.https || port && Number.parseInt(aport, 10) === 443 ? "s" : ""}:`) + (scheme ? "" : "//") + text;
 		const url = new URL(text);
-		if (settings.suffix && suffixes && host) {
-			if (validSufix(host)) {
-				return url;
-			}
-		} else {
+		if (validSuffix(host)) {
 			return url;
 		}
 	}
@@ -303,12 +325,7 @@ function getEmail(text) {
 		text = ipv6 ? `[${ipv6}]` : ipv4 || domain.replaceAll(/[\p{Ps}\s_]+dot[\p{Pe}\s_]+/giu, ".");
 		const { hostname } = new URL(`https://${text}`);
 		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
-		if (settings.suffix && suffixes && host) {
-			if (validSufix(hostname)) {
-				return mail;
-			}
-		} else {
-			// console.error(text);
+		if (validSuffix(host)) {
 			return mail;
 		}
 	}
@@ -326,7 +343,13 @@ function getMail(text) {
 		const url = text.href;
 		const qmark = url.indexOf("?");
 		const {length} = "mailto:";
-		return qmark > length ? url.substring(length, qmark) : url.slice(length);
+		let addresses = qmark > length ? url.substring(length, qmark) : url.slice(length);
+		try {
+			addresses = decodeURIComponent(addresses);
+		} catch (error) {
+			console.error(error);
+		}
+		return addresses;
 	}
 	return null;
 }
@@ -390,9 +413,54 @@ function getTel(text) {
 		// return url.slice("tel:".length);
 		const qmark = url.indexOf("?");
 		const {length} = "tel:";
-		return qmark > length ? url.substring(length, qmark) : url.slice(length);
+		let phone = qmark > length ? url.substring(length, qmark) : url.slice(length);
+		try {
+			phone = decodeURIComponent(phone);
+		} catch (error) {
+			console.error(error);
+		}
+		return phone;
 	}
 	return null;
+}
+
+/**
+ * Get URIs.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function getURIs(text) {
+	return Array.from(text.matchAll(IRI), (airi) => {
+		const [iri] = airi;
+		const uri = new URL(iri);
+		if (reURL.test(uri.protocol)) {
+			if (checkURL(iri, airi)) {
+				return uri.href;
+			}
+		} else {
+			return uri.href;
+		}
+		return null;
+	}).filter(Boolean);
+}
+
+/**
+ * Get e-mail addresses.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function getMails(text) {
+	return Array.from(text.matchAll(EMAIL), (amail) => {
+		const [, user, domain, ipv6, ipv4, host] = amail;
+		const { hostname } = new URL(`https://${ipv6 ? `[${ipv6}]` : ipv4 || domain}`);
+		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
+		if (validSuffix(host)) {
+			return mail;
+		}
+		return null;
+	}).filter(Boolean);
 }
 
 /**
@@ -484,8 +552,8 @@ async function handleMenuChoosen(info, tab) {
 				if (iri) {
 					console.assert(!URL.canParse || URL.canParse(text), "Error: Invalid URI");
 					uri = new URL(text);
-					if (reURL.test(iri[1])) {
-						if (URLRE.test(text)) {
+					if (reURL.test(uri.protocol)) {
+						if (checkURL(text, iri)) {
 							url = uri;
 						}
 					} else {
@@ -527,7 +595,11 @@ async function handleMenuChoosen(info, tab) {
 								}
 								break;
 							case TYPE.TAB: {
-								browser.tabs.create({ url: atemp, active: !settings.background, discarded: settings.background && settings.lazy, /* index: tab.index + 1, */ openerTabId: tab.id }).catch((error) => {
+								const options = { url: atemp, active: !settings.background, /* index: tab.index + 1, */ openerTabId: tab.id };
+								if (!IS_CHROME) {
+									options.discarded = settings.background && settings.lazy;
+								}
+								browser.tabs.create(options).catch((error) => {
 									console.error(error);
 
 									browser.tabs.create({ /* index: tab.index + 1, */ openerTabId: tab.id });
@@ -618,14 +690,7 @@ async function handleMenuChoosen(info, tab) {
 					if (mail) {
 						// This encodes too many characters
 						const amail = `mailto:${encodeURIComponent(mail)}`;
-						if (!aamenuItemId) {
-							if (IS_THUNDERBIRD) {
-								// https://bugzilla.mozilla.org/show_bug.cgi?id=1828102
-								browser.compose.beginNew(null, { to: mail });
-							} else {
-								browser.tabs.update(tab.id, { url: amail });
-							}
-						} else {
+						if (aamenuItemId) {
 							switch (aamenuItemId) {
 								case TYPE.DOMAIN: {
 									const host = getEmailHost(mail);
@@ -644,6 +709,9 @@ async function handleMenuChoosen(info, tab) {
 									break;
 								// No default
 							}
+						} else {
+							// browser.compose.beginNew(null, { to: mail });
+							browser.tabs.update(tab.id, { url: amail });
 						}
 					} else {
 						chrome("e-mail address", atext);
@@ -652,9 +720,7 @@ async function handleMenuChoosen(info, tab) {
 				case TYPE.TEL:
 					if (tel) {
 						const atel = `tel:${tel}`;
-						if (!aamenuItemId) {
-							browser.tabs.update(tab.id, { url: atel });
-						} else {
+						if (aamenuItemId) {
 							switch (aamenuItemId) {
 								case TYPE.SMS: {
 									const sms = `sms:${tel}`;
@@ -669,6 +735,8 @@ async function handleMenuChoosen(info, tab) {
 									break;
 								// No default
 							}
+						} else {
+							browser.tabs.update(tab.id, { url: atel });
 						}
 					} else {
 						chrome("telephone number", atext);
@@ -677,16 +745,36 @@ async function handleMenuChoosen(info, tab) {
 			}
 			break;
 		}
-		case TYPE.ALL: {
-			const aurls = text.match(IRI);
-			if (aurls.length) {
-				urls.push(...aurls);
-			} else {
-				console.error("Error: No URIs found", text);
-				notification("❌ No URIs found", "The selected text does not contain any valid URIs. This error should only happen in Chrome/Chromium.");
+		case TYPE.ALL:
+			switch (amenuItemId) {
+				case TYPE.URI: {
+					const aurls = getURIs(text);
+					if (aurls.length) {
+						urls.push(...aurls);
+					} else {
+						console.error("Error: No URIs found", text);
+						notification("❌ No URIs found", "The selected text does not contain any valid URIs. This error should only happen in Chrome/Chromium.");
+					}
+					break;
+				}
+				case TYPE.MAIL: {
+					const mails = getMails(text);
+					if (mails.length) {
+						// browser.compose.beginNew(null, { to: mails });
+						// This encodes too many characters
+						if (settings.single) {
+							urls.push(`mailto:${mails.map((mail) => encodeURIComponent(mail)).join(",")}`);
+						} else {
+							urls.push(...mails.map((mail) => `mailto:${encodeURIComponent(mail)}`));
+						}
+					} else {
+						console.error("Error: No e-mail addresses found", text);
+						notification("❌ No e-mail addresses found", "The selected text does not contain any valid e-mail addresses. This error should only happen in Chrome/Chromium.");
+					}
+					break;
+				}
 			}
 			break;
-		}
 	}
 
 	if (urls.length) {
@@ -696,6 +784,8 @@ async function handleMenuChoosen(info, tab) {
 				if (reURL.test(uri.protocol)) {
 					// Only supports HTTP and HTTPS URLs: https://bugzilla.mozilla.org/show_bug.cgi?id=1716200
 					await thunderbird(url);
+				} else if (reMail.test(uri.protocol)) {
+					await browser.tabs.update(tab.id, { url });
 				} else {
 					await browser.tabs.create({ url });
 				}
@@ -711,7 +801,11 @@ async function handleMenuChoosen(info, tab) {
 
 			if (urls.length > 1) {
 				for (const url of urls) {
-					await browser.tabs.create({ url, active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
+					const options = { url, active: aactive, /* index: aindex, */ openerTabId: tab.id };
+					if (!IS_CHROME) {
+						options.discarded = !aactive && settings.lazy;
+					}
+					await browser.tabs.create(options);
 					// aindex += 1;
 					aactive = false;
 					if (settings.delay) {
@@ -719,7 +813,11 @@ async function handleMenuChoosen(info, tab) {
 					}
 				}
 			} else if (settings.newTab) {
-				browser.tabs.create({ url: urls[0], active: aactive, discarded: !aactive && settings.lazy, /* index: aindex, */ openerTabId: tab.id });
+				const options = { url: urls[0], active: aactive, /* index: aindex, */ openerTabId: tab.id };
+				if (!IS_CHROME) {
+					options.discarded = !aactive && settings.lazy;
+				}
+				browser.tabs.create(options);
 			} else {
 				browser.tabs.update(tab.id, { url: urls[0] });
 			}
@@ -743,6 +841,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		let mail = null;
 		let tel = null;
 		let urls = null;
+		let mails = null;
 
 		if (exampleText) {
 			const iri = IRIRE.exec(exampleText);
@@ -750,12 +849,10 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			if (iri) {
 				console.assert(!URL.canParse || URL.canParse(exampleText), "Error: Invalid URI");
 				uri = new URL(exampleText);
-				if (reURL.test(iri[1])) {
+				if (reURL.test(uri.protocol)) {
 					// console.log(URLRE.exec(exampleText));
-					if (URLRE.test(exampleText)) {
+					if (checkURL(exampleText, iri)) {
 						url = uri;
-					} else {
-						console.error(iri, exampleText);
 					}
 				} else {
 					url = getURL(exampleText);
@@ -766,7 +863,8 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				mail = getEmail(exampleText);
 				tel = getPhone(exampleText);
 			}
-			urls = exampleText.match(IRI);
+			urls = getURIs(exampleText);
+			mails = getMails(exampleText);
 		} else if (linkUrl) {
 			console.assert(!URL.canParse || URL.canParse(linkUrl), "Error: Invalid URI");
 			uri = new URL(linkUrl);
@@ -829,9 +927,15 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			}
 		}
 		if (settings.uris) {
-			menus.update(TYPE.ALL, {
-				title: `&Open All ${settings.livePreview && urls ? `${numberFormat.format(urls.length)} ` : ""}Links`,
-				visible: Boolean(urls) && urls.length > 1
+			menus.update(`${TYPE.ALL}-${TYPE.URI}`, {
+				title: `Open All ${settings.livePreview && urls?.length ? `${numberFormat.format(urls.length)} ` : ""}Links`,
+				visible: Boolean(urls?.length) && urls.length > 1
+			});
+		}
+		if (settings.mails) {
+			menus.update(`${TYPE.ALL}-${TYPE.MAIL}`, {
+				title: `Mail to All ${settings.livePreview && mails?.length ? `${numberFormat.format(mails.length)} ` : ""}Addresses`,
+				visible: Boolean(mails?.length) && mails.length > 1
 			});
 		}
 		if (settings.urls) {
@@ -982,8 +1086,15 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		}
 		if (settings.uris) {
 			await menus.create({
-				id: TYPE.ALL,
+				id: `${TYPE.ALL}-${TYPE.URI}`,
 				title: "Open All Links",
+				contexts: ["selection"]
+			});
+		}
+		if (settings.mails) {
+			await menus.create({
+				id: `${TYPE.ALL}-${TYPE.MAIL}`,
+				title: IS_THUNDERBIRD ? "Compose Message to All Addresses" : "Mail to All Addresses",
 				contexts: ["selection"]
 			});
 		}
@@ -1203,7 +1314,7 @@ function createTree(arr) {
 	}
 
 	Object.freeze(tree);
-	return createRegEx(tree).replaceAll(".", "\\.").replaceAll("*", "[^.]+");
+	return createRegEx(tree).replaceAll(".", String.raw`\.`).replaceAll("*", "[^.]+");
 }
 
 /**
@@ -1272,7 +1383,10 @@ async function setSettings(asettings) {
 	settings.tel = asettings.tel;
 	settings.uri = asettings.uri;
 	settings.uris = asettings.uris;
+	settings.mails = asettings.mails;
 	settings.https = asettings.https;
+	settings.share = asettings.share;
+	settings.single = asettings.single;
 	settings.newTab = false;
 	settings.newWindow = false;
 	settings.private = false;

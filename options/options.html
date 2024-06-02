@@ -77,7 +77,7 @@
 							<abbr title="Hypertext Transfer Protocol">HTTP</abbr>, <abbr
 								title="Hypertext Transfer Protocol Secure">HTTPS</abbr>and <abbr
 								title="File Transfer Protocol">FTP</abbr>protocols. For example:
-							<code>example.com</code>or <code>https://example.com/</code></span>
+							“<code>example.com</code>” or “<code>https://example.com/</code>”</span>
 
 						<div class="line">
 							<input class="setting save-on-change" type="checkbox" id="mail" data-optiongroup="settings" name="mail">
@@ -85,14 +85,14 @@
 						</div>
 						<span class="line indent helper-text">Supports International email and <a
 								href="https://en.wikipedia.org/wiki/Address_munging" target="_blank">munged
-								addresses</a>. For example: <code>example@example.com</code>or
-							<code>example [at] example [dot] com</code></span>
+								addresses</a>. For example: “<code>example@example.com</code>” or
+							“<code>example [at] example [dot] com</code>”</span>
 
 						<div class="line">
 							<input class="setting save-on-change" type="checkbox" id="tel" data-optiongroup="settings" name="tel">
 							<label for="tel">Selected telephone numbers</label>
 						</div>
-						<span class="line indent helper-text">For example: <code>(800) 555-0199</code></span>
+						<span class="line indent helper-text">For example: “<code>(800) 555-0199</code>”</span>
 
 						<div class="line">
 							<input class="setting save-on-change" type="checkbox" id="uri" data-optiongroup="settings" name="uri">
@@ -101,12 +101,17 @@
 									title="Internationalized Resource Identifier">IRI</abbr>s</label>
 						</div>
 						<span class="line indent helper-text">For example:
-							<code>mailto:example@example.com</code></span>
+							“<code>mailto:example@example.com</code>”</span>
 
 						<div class="line">
 							<input class="setting save-on-change" type="checkbox" id="uris" data-optiongroup="settings" name="uris">
 							<label for="uris">Multiple selected <abbr title="Uniform Resource Locator">URI</abbr>s/<abbr
 									title="Internationalized Resource Identifier">IRI</abbr>s</label>
+						</div>
+
+						<div class="line">
+							<input class="setting save-on-change" type="checkbox" id="mails" data-optiongroup="settings" name="mails">
+							<label for="mails">Multiple selected e-mail addresses</label>
 						</div>
 					</fieldset>
 				</li>
@@ -119,6 +124,13 @@
 					<span class="line indent helper-text">Note that this is not yet enabled by default in
 						Firefox/Thunderbird (see <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1653481"
 							target="_blank">bug 1653481</a>).</span>
+				</li>
+
+				<li>
+					<div class="line">
+						<input class="setting save-on-change" type="checkbox" id="single" data-optiongroup="settings" name="single">
+						<label for="single">Open multiple e-mail addresses together</label>
+					</div>
 				</li>
 
 				<li>
@@ -187,8 +199,8 @@
 						<input class="setting save-on-change" type="checkbox" id="lazy" data-optiongroup="settings" name="lazy">
 						<label for="lazy">Do not load tabs until clicked/activated</label>
 					</div>
-					<span class="line indent helper-text">Lazy load tabs to reduce memory (RAM) usage. Requires opening
-						in background.</span>
+					<span class="line indent helper-text">Lazy load tabs to reduce memory (RAM) usage. Firefox only and
+						requires opening in background.</span>
 				</li>
 
 				<li>
