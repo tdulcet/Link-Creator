@@ -170,7 +170,7 @@ browser.notifications.onClosed.addListener((notificationId) => {
  * @param {string} link
  * @returns {void}
  */
-function copyToClipboard(text/* , link */) {
+function copyToClipboard(text, _link) {
 	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
 	/* const atext = encodeXML(text);
 	const alink = encodeXML(link);
@@ -325,7 +325,7 @@ function getEmail(text) {
 		text = ipv6 ? `[${ipv6}]` : ipv4 || domain.replaceAll(/[\p{Ps}\s_]+dot[\p{Pe}\s_]+/giu, ".");
 		const { hostname } = new URL(`https://${text}`);
 		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
-		if (validSuffix(host)) {
+		if (!host || validSuffix(hostname)) {
 			return mail;
 		}
 	}
@@ -456,7 +456,7 @@ function getMails(text) {
 		const [, user, domain, ipv6, ipv4, host] = amail;
 		const { hostname } = new URL(`https://${ipv6 ? `[${ipv6}]` : ipv4 || domain}`);
 		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
-		if (validSuffix(host)) {
+		if (!host || validSuffix(hostname)) {
 			return mail;
 		}
 		return null;
@@ -882,58 +882,58 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			const temp = uri?.href;
 			// console.log(settings.uri, uri, settings.urls, url, linkUrl, avisible);
 			if (exampleText) {
-				menus.update(`${aid}-${TYPE.GO}`, {
+				await menus.update(`${aid}-${TYPE.GO}`, {
 					title: `&Go to ${settings.livePreview && temp ? `“${temp.replaceAll("&", "&&")}”` : "“%s”"}`,
 					visible: avisible || !settings.urls,
 					enabled: avisible
 				});
 			}
 			if (linkUrl) {
-				menus.update(`${aid}-${TYPE.LINK}`, {
+				await menus.update(`${aid}-${TYPE.LINK}`, {
 					title: `&Open Link${settings.livePreview && temp && !exampleText ? ` “${temp.replaceAll("&", "&&")}”` : ""}`,
 					visible: avisible && !exampleText
 				});
 			}
 			if (!IS_THUNDERBIRD) {
-				menus.update(`${aid}-${TYPE.TAB}`, {
+				await menus.update(`${aid}-${TYPE.TAB}`, {
 					visible: avisible
 				});
-				menus.update(`${aid}-${TYPE.WINDOW}`, {
+				await menus.update(`${aid}-${TYPE.WINDOW}`, {
 					visible: avisible && !tab.incognito
 				});
-				menus.update(`${aid}-${TYPE.PRIVATE}`, {
+				await menus.update(`${aid}-${TYPE.PRIVATE}`, {
 					visible: avisible,
 					enabled: avisible && isAllowed
 				});
 			}
-			menus.update(`${aid}-${TYPE.DOMAIN}`, {
+			await menus.update(`${aid}-${TYPE.DOMAIN}`, {
 				title: `${TAB}Go to ${settings.livePreview && host ? `“${host.replaceAll("&", "&&")}”` : "domain"}`,
 				visible: avisible && Boolean(host)
 			});
-			menus.update(`${aid}-${TYPE.COPY}`, {
+			await menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: avisible
 			});
-			menus.update(`${aid}-${TYPE.COPY}-${TYPE.MAIL}`, {
+			await menus.update(`${aid}-${TYPE.COPY}-${TYPE.MAIL}`, {
 				visible: avisible && Boolean(addresses)
 			});
-			menus.update(`${aid}-${TYPE.COPY}-${TYPE.TEL}`, {
+			await menus.update(`${aid}-${TYPE.COPY}-${TYPE.TEL}`, {
 				visible: avisible && Boolean(phone)
 			});
 			if (settings.share && navigator.canShare) {
-				menus.update(`${aid}-${TYPE.SHARE}`, {
+				await menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
 					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: temp })
 				});
 			}
 		}
 		if (settings.uris) {
-			menus.update(`${TYPE.ALL}-${TYPE.URI}`, {
+			await menus.update(`${TYPE.ALL}-${TYPE.URI}`, {
 				title: `Open All ${settings.livePreview && urls?.length ? `${numberFormat.format(urls.length)} ` : ""}Links`,
 				visible: Boolean(urls?.length) && urls.length > 1
 			});
 		}
 		if (settings.mails) {
-			menus.update(`${TYPE.ALL}-${TYPE.MAIL}`, {
+			await menus.update(`${TYPE.ALL}-${TYPE.MAIL}`, {
 				title: `Mail to All ${settings.livePreview && mails?.length ? `${numberFormat.format(mails.length)} ` : ""}Addresses`,
 				visible: Boolean(mails?.length) && mails.length > 1
 			});
@@ -944,40 +944,40 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			const temp = url?.href;
 			// console.log(settings.uri, uri, settings.urls, url, avisible);
 			if (exampleText) {
-				menus.update(`${aid}-${TYPE.GO}`, {
+				await menus.update(`${aid}-${TYPE.GO}`, {
 					title: settings.livePreview && temp ? `&Go to “${temp.replaceAll("&", "&&")}”` : "&Go to “%s”",
 					enabled: avisible
 				});
 			}
 			if (linkUrl) {
-				menus.update(`${aid}-${TYPE.LINK}`, {
+				await menus.update(`${aid}-${TYPE.LINK}`, {
 					title: `&Open Link${settings.livePreview && temp && !exampleText ? ` “${temp.replaceAll("&", "&&")}”` : ""}`,
 					visible: avisible && !exampleText
 				});
 			}
 			if (!IS_THUNDERBIRD) {
-				menus.update(`${aid}-${TYPE.TAB}`, {
+				await menus.update(`${aid}-${TYPE.TAB}`, {
 					visible: avisible
 				});
-				menus.update(`${aid}-${TYPE.WINDOW}`, {
+				await menus.update(`${aid}-${TYPE.WINDOW}`, {
 					visible: avisible && !tab.incognito
 				});
-				menus.update(`${aid}-${TYPE.PRIVATE}`, {
+				await menus.update(`${aid}-${TYPE.PRIVATE}`, {
 					visible: avisible,
 					enabled: avisible && isAllowed
 				});
 			}
-			menus.update(`${aid}-${TYPE.COPY}`, {
+			await menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: avisible
 			});
 			if (settings.share && navigator.canShare) {
-				menus.update(`${aid}-${TYPE.SHARE}`, {
+				await menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: avisible,
 					enabled: avisible && navigator.canShare({ title: `Link shared with “${TITLE}”`, url: temp })
 				});
 			}
 			if (!IS_THUNDERBIRD) {
-				menus.update(`${aid}-${TYPE.SOURCE}`, {
+				await menus.update(`${aid}-${TYPE.SOURCE}`, {
 					visible: Boolean(temp)
 				});
 			}
@@ -985,19 +985,19 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		if (settings.mail) {
 			const aid = `${TYPE.LINK}-${TYPE.MAIL}`;
 			const host = mail && getEmailHost(mail);
-			menus.update(aid, {
+			await menus.update(aid, {
 				title: settings.livePreview && mail ? `&Mail to “${mail.replaceAll("&", "&&")}”` : "&Mail to “%s”",
 				enabled: Boolean(mail)
 			});
-			menus.update(`${aid}-${TYPE.DOMAIN}`, {
+			await menus.update(`${aid}-${TYPE.DOMAIN}`, {
 				title: `${TAB}Go to ${settings.livePreview && host ? `“${host.replaceAll("&", "&&")}”` : "domain"}`,
 				visible: Boolean(host)
 			});
-			menus.update(`${aid}-${TYPE.COPY}`, {
+			await menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: Boolean(mail)
 			});
 			if (settings.share && navigator.canShare) {
-				menus.update(`${aid}-${TYPE.SHARE}`, {
+				await menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: Boolean(mail),
 					enabled: Boolean(mail) && navigator.canShare({ title: `Email Address shared with “${TITLE}”`, url: mail })
 				});
@@ -1005,18 +1005,18 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		}
 		if (settings.tel) {
 			const aid = `${TYPE.LINK}-${TYPE.TEL}`;
-			menus.update(aid, {
+			await menus.update(aid, {
 				title: settings.livePreview && tel ? `Call “${tel}”` : "Call “%s”",
 				enabled: Boolean(tel)
 			});
-			menus.update(`${aid}-${TYPE.SMS}`, {
+			await menus.update(`${aid}-${TYPE.SMS}`, {
 				visible: Boolean(tel)
 			});
-			menus.update(`${aid}-${TYPE.COPY}`, {
+			await menus.update(`${aid}-${TYPE.COPY}`, {
 				visible: Boolean(tel)
 			});
 			if (settings.share && navigator.canShare) {
-				menus.update(`${aid}-${TYPE.SHARE}`, {
+				await menus.update(`${aid}-${TYPE.SHARE}`, {
 					visible: Boolean(tel),
 					enabled: Boolean(tel) && navigator.canShare({ title: `Telephone Number shared with “${TITLE}”`, url: tel })
 				});

@@ -37,12 +37,34 @@ Firefox, Chromium and Thunderbird add-on/WebExtension to open selected URIs, URL
 
 ❤️ Please visit [tealdulcet.com](https://www.tealdulcet.com/) to support this extension and my other software development.
 
-⬇️ Download from [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/link-creator/) (AMO) and [Addons.thunderbird.net](https://addons.thunderbird.net/thunderbird/addon/link-creator/) (ATN).
-
-Use on Thunderbird requires renaming the [thunderbirdmanifest.json](thunderbirdmanifest.json) file to `manifest.json`.
-Use on Chromium/Chrome requires the downloading the [webextension-polyfill](https://github.com/mozilla/webextension-polyfill) and renaming the [chromemanifest.json](chromemanifest.json) file to `manifest.json`.
-
 \* Requires supported program
+
+## Download
+
+* [Addons.mozilla.org](https://addons.mozilla.org/firefox/addon/link-creator/) (AMO)
+* [Addons.thunderbird.net](https://addons.thunderbird.net/thunderbird/addon/link-creator/) (ATN)
+
+## Install from source
+
+Clone the repository:
+```bash
+git clone --recurse-submodules https://github.com/tdulcet/Link-Creator.git
+```
+
+### Firefox
+
+Follow [these instructions](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) to install it in Firefox
+
+### Thunderbird
+
+1. Rename the [thunderbirdmanifest.json](thunderbirdmanifest.json) file to `manifest.json`
+2. Follow [these instructions](https://developer.thunderbird.net/add-ons/hello-world-add-on#installing) to install it in Thunderbird
+
+### Chromium/Chrome
+
+1. Download the [webextension-polyfill](https://github.com/mozilla/webextension-polyfill) (specifically download the `browser-polyfill.js` file [from here](https://unpkg.com/webextension-polyfill/dist/))
+2. Rename the [chromemanifest.json](chromemanifest.json) file to `manifest.json`
+3. Follow [these instructions](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world) to install it in Chromium/Chrome
 
 ## Other Extensions
 
@@ -62,6 +84,7 @@ Pull requests welcome! Ideas for contributions:
 * Support directly opening URLs in a private/incognito window in Firefox from Thunderbird (see [bug 1828089](https://bugzilla.mozilla.org/show_bug.cgi?id=1828089))
 * Support e-mail addresses in the message header and compose window in Thunderbird
 * Get the suffixes directly from the browser instead of downloading the PSL (see [bug 1315558](https://bugzilla.mozilla.org/show_bug.cgi?id=1315558))
+* Support removing tracking parameters from URLs (see [bug 1899275](https://bugzilla.mozilla.org/show_bug.cgi?id=1899275))
 * Improve the performance
 * Sync settings in Thunderbird (see [bug 446444](https://bugzilla.mozilla.org/show_bug.cgi?id=446444))
 * Support Firefox for Android (see [bug 1595822](https://bugzilla.mozilla.org/show_bug.cgi?id=1595822))
