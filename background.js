@@ -22,20 +22,20 @@ const ucschar = String.raw`[^\p{ASCII}\p{Cc}\p{Cs}\p{Co}\p{NChar}]`;
 // \p{Private_Use}
 const iprivate = String.raw`\p{Co}`;
 // const iprivate = "\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}";
-const iunreserved = String.raw`(?:[a-zA-Z\d._~-]|${ucschar})`;
+const iunreserved = String.raw`(?:[\w.~-]|${ucschar})`;
 const ipchar = `(?:${iunreserved}|${pct_encoded}|[${sub_delims}:@])`;
 
 // IPv4 address regular expressions
 // \p{ASCII_Hex_Digit}
 const octet = String.raw`(?:0x0*\p{AHex}{1,2}|0+[0-3]?[0-7]{1,2}|25[0-5]|(?:2[0-4]|1\d|[1-9])?\d)`;
 // Supports dotted octal, decimal and hexadecimal notations/formats
-const IPv4 = String.raw`(?:${octet}\.(?:${octet}(?:(?:\.${octet}){2}|\.(?:0x0*\p{AHex}{1,4}|0+[01]?[0-7]{1,5}|(?:6553[0-5]|(?:655[0-2]|65[0-4]\d{1}|6[0-4]\d{2}|[1-5]\d{3}|[1-9]\d{0,2})?\d)))|0x0*\p{AHex}{1,6}|0+[0-7]{1,8}|(?:1677721[0-5]|(?:1677720|16777[01]\d|1677[0-6]\d{2}|167[0-6]\d{3}|16[0-6]\d{4}|1[0-5]\d{5}|[1-9]\d{0,5})?\d))|0x0*\p{AHex}{1,8}|0+[0-3]?[0-7]{1,10}|(?:429496729[0-5]|(?:42949672[0-8]|4294967[01]\d|429496[0-6]\d{2}|42949[0-5]\d{3}|4294[0-8]\d{4}|429[0-3]\d{5}|42[0-8]\d{6}|4[01]\d{7}|[1-3]\d{8}|[1-9]\d{0,7})?\d))`;
+const IPv4 = String.raw`(?:${octet}\.(?:${octet}(?:(?:\.${octet}){2}|\.(?:0x0*\p{AHex}{1,4}|0+[01]?[0-7]{1,5}|6553[0-5]|(?:655[0-2]|65[0-4]\d|6[0-4]\d{2}|[1-5]\d{3}|[1-9]\d{0,2})?\d))|0x0*\p{AHex}{1,6}|0+[0-7]{1,8}|1677721[0-5]|(?:1677720|16777[01]\d|1677[0-6]\d{2}|167[0-6]\d{3}|16[0-6]\d{4}|1[0-5]\d{5}|[1-9]\d{0,5})?\d)|0x0*\p{AHex}{1,8}|0+[0-3]?[0-7]{1,10}|429496729[0-5]|(?:42949672[0-8]|4294967[01]\d|429496[0-6]\d{2}|42949[0-5]\d{3}|4294[0-8]\d{4}|429[0-3]\d{5}|42[0-8]\d{6}|4[01]\d{7}|[1-3]\d{8}|[1-9]\d{0,7})?\d)`;
 // Supports only dotted decimal notation/format
-const IPv4address = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])\.){3}(?:25[0-5]|(?:2[0-4]|[01]?[0-9])?[0-9])`;
+const IPv4address = String.raw`(?:(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)\.){3}(?:25[0-5]|(?:2[0-4]|[01]?\d)?\d)`;
 
 // IPv6 address regular expression
 // \p{ASCII_Hex_Digit}
-const IPv6address = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|(?:\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:)|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4address})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)(?:%25(?:${iunreserved}|${pct_encoded})+)?`;
+const IPv6address = String.raw`(?:(?:(?:\p{AHex}{1,4}:){6}|::(?:\p{AHex}{1,4}:){5}|\p{AHex}{0,4}::(?:\p{AHex}{1,4}:){4}|(?:(?:\p{AHex}{1,4}:)?\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){3}|(?:(?:\p{AHex}{1,4}:){0,2}\p{AHex}{1,4})?::(?:\p{AHex}{1,4}:){2}|(?:(?:\p{AHex}{1,4}:){0,3}\p{AHex}{1,4})?::\p{AHex}{1,4}:|(?:(?:\p{AHex}{1,4}:){0,4}\p{AHex}{1,4})?::)(?:\p{AHex}{1,4}:\p{AHex}{1,4}|${IPv4address})|(?:(?:\p{AHex}{1,4}:){0,5}\p{AHex}{1,4})?::\p{AHex}{1,4}|(?:(?:\p{AHex}{1,4}:){0,6}\p{AHex}{1,4})?::)(?:%25(?:${iunreserved}|${pct_encoded})+)?`;
 
 // URI/IRI regular expression
 const aIRI = String.raw`([a-zA-Z][a-zA-Z\d+.-]*:)(//((?:${iunreserved}|${pct_encoded}|[${sub_delims}:])*@)?(\[${IPv6address}\]|${IPv4address}|(?:${iunreserved}|${pct_encoded}|[${sub_delims}])*)(:\d*)?(?:/${ipchar}*)*|/(?:${ipchar}+(?:/${ipchar}*)*)?|${ipchar}+(?:/${ipchar}*)*)(\?(?:${ipchar}|[${iprivate}/?])*)?(#(?:${ipchar}|[/?])*)?`;
@@ -49,10 +49,10 @@ const URLRE = new RegExp(`^${aURL}$`, "iu");
 
 // E-mail address regular expression
 // \p{Open_Punctuation} \p{Close_Punctuation} \p{Dash_Punctuation} \p{Connector_Punctuation} \p{Math_Symbol}
-const aMAIL = String.raw`^((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s_]+(?:at|@)[\p{Pe}\s_]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s_]+dot[\p{Pe}\s_]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
+const aMAIL = String.raw`^((?:(?:[^@"(),:;<>[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:(?:[\p{Ps}\s_]+dot[\p{Pe}\s_]+|\.)(?:(?:[^@"(),:;<>[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)(?:[\p{Ps}\s_]+(?:at|@)[\p{Pe}\s_]+|\s*@\s*)(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?(?:[\p{Ps}\s_]+dot[\p{Pe}\s_]+|\.))+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))$`;
 const MAILRE = new RegExp(aMAIL, "iu");
-const aEMAIL = String.raw`((?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>\[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))`;
-const EMAIL = new RegExp(aEMAIL, "igu");
+const aEMAIL = String.raw`((?:(?:[^@"(),:;<>[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+")(?:\.(?:(?:[^@"(),:;<>[\\\].\s]|\\[^():;<>.])+|"(?:[^"\\]|\\.)+"))*)@(\[(?:IPv6:(${IPv6address})|(${IPv4}))\]|((?:(?:\w|${ucschar})(?:(?:[\w-]|${ucschar}){0,61}(?:\w|${ucschar}))?\.)+(?:xn--[a-z\d-]{0,58}[a-z\d]|(?:[a-z]|${ucschar}){2,63})))`;
+const EMAIL = new RegExp(aEMAIL, "giu");
 const EMAILRE = new RegExp(`^${aEMAIL}$`, "iu");
 
 // Telephone number regular expression
@@ -164,20 +164,37 @@ browser.notifications.onClosed.addListener((notificationId) => {
 });
 
 /**
+ * Create link.
+ *
+ * @param {string} link
+ * @returns {HTMLAnchorElement}
+ */
+function createlink(link) {
+	const a = document.createElement("a");
+	a.href = link;
+	a.target = "_blank";
+	return a;
+}
+
+/**
  * Copy link to clipboard.
  *
  * @param {string} text
  * @param {string} link
  * @returns {void}
  */
-function copyToClipboard(text, _link) {
-	// https://github.com/mdn/webextensions-examples/blob/master/context-menu-copy-link-with-types/clipboard-helper.js
-	/* const atext = encodeXML(text);
-	const alink = encodeXML(link);
+function copyToClipboard(text, link) {
+	if (navigator.clipboard.write) {
+		const a = createlink(link);
+		a.textContent = text;
 
-	const html = `<a href="${alink}">${atext}</a>`; */
-
-	navigator.clipboard.writeText(text);
+		navigator.clipboard.write([new ClipboardItem({
+			"text/plain": new Blob([text], { type: "text/plain" }),
+			"text/html": new Blob([a.outerHTML], { type: "text/html" })
+		})]);
+	} else {
+		navigator.clipboard.writeText(text);
+	}
 }
 
 /**
@@ -322,9 +339,10 @@ function getEmail(text) {
 	const amail = MAILRE.exec(text);
 	if (amail) {
 		const [, user, domain, ipv6, ipv4, host] = amail;
-		text = ipv6 ? `[${ipv6}]` : ipv4 || domain.replaceAll(/[\p{Ps}\s_]+dot[\p{Pe}\s_]+/giu, ".");
+		const re = /[\p{Ps}\s_]+dot[\p{Pe}\s_]+/giu;
+		text = ipv6 ? `[${ipv6}]` : ipv4 || domain.replaceAll(re, ".");
 		const { hostname } = new URL(`https://${text}`);
-		const mail = `${user}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
+		const mail = `${user.replaceAll(re, ".")}@${ipv6 ? `[IPv6:${hostname.slice(1, -1)}]` : ipv4 ? `[${hostname}]` : hostname}`;
 		if (!host || validSuffix(hostname)) {
 			return mail;
 		}
@@ -342,7 +360,7 @@ function getMail(text) {
 	if (reMail.test(text.protocol)) {
 		const url = text.href;
 		const qmark = url.indexOf("?");
-		const {length} = "mailto:";
+		const { length } = "mailto:";
 		let addresses = qmark > length ? url.substring(length, qmark) : url.slice(length);
 		try {
 			addresses = decodeURIComponent(addresses);
@@ -412,7 +430,7 @@ function getTel(text) {
 		const url = text.href;
 		// return url.slice("tel:".length);
 		const qmark = url.indexOf("?");
-		const {length} = "tel:";
+		const { length } = "tel:";
 		let phone = qmark > length ? url.substring(length, qmark) : url.slice(length);
 		try {
 			phone = decodeURIComponent(phone);

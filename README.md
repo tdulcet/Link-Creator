@@ -16,7 +16,7 @@ Firefox, Chromium and Thunderbird add-on/WebExtension to open selected URIs, URL
 	* Supports [munged addresses](https://en.wikipedia.org/wiki/Address_munging), such as those of the form `example [at] example [dot] com`
 * \*Allows calling and messaging telephone numbers (uses the `tel:` and `sms:` URIs)
 	* Automatically converts letters to numbers
-* Allows opening multiple URIs
+* Allows opening multiple URIs or e-mail addresses
 * Allows copying the formatted URI, URL, email address or telephone number to your clipboard
 * Allows viewing the source of URLs (uses the `view-source:` URI)
 * Supports [Internationalized domain names](https://en.wikipedia.org/wiki/Internationalized_domain_name) (IDNs), [IRIs](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier) and [International email](https://en.wikipedia.org/wiki/International_email) addresses
@@ -70,6 +70,7 @@ Follow [these instructions](https://extensionworkshop.com/documentation/develop/
 
 * [URL Link](https://github.com/fnxweb/urllink) (Firefox and Thunderbird)
 * [Text Link](https://github.com/piroor/textlink) (Firefox)
+* [Link to Text Fragment](https://github.com/GoogleChromeLabs/link-to-text-fragment) (Chrome, Firefox and Safari)
 
 ## Contributing
 
@@ -78,6 +79,7 @@ Pull requests welcome! Ideas for contributions:
 * Convert to [Manifest V3](https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/) (MV3)
 * Refactor into more modules
 * Add a test suite for the regular expressions
+* Support creating [Text Fragment](https://developer.mozilla.org/docs/Web/URI/Fragment/Text_fragments) links (see [bug 1753933](https://bugzilla.mozilla.org/show_bug.cgi?id=1753933))
 * Support more than one top level context menu item (see [bug 1294429](https://bugzilla.mozilla.org/show_bug.cgi?id=1294429))
 * Support directly opening arbitrary URIs in Thunderbird (see [bug 1716200](https://bugzilla.mozilla.org/show_bug.cgi?id=1716200) and [bug 1828110](https://bugzilla.mozilla.org/show_bug.cgi?id=1828110))
 * Support directly opening `data:` and other privileged URIs in Firefox (see [bug 1317166](https://bugzilla.mozilla.org/show_bug.cgi?id=1317166) and [bug 1269456](https://bugzilla.mozilla.org/show_bug.cgi?id=1269456))
