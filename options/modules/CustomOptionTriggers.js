@@ -38,6 +38,7 @@ export async function registerTrigger() {
 
 	// Thunderbird
 	if (globalThis.messenger) {
+		document.getElementById("short").disabled = true;
 		document.getElementById("currentTab").disabled = true;
 		document.getElementById("newWindow").disabled = true;
 		document.getElementById("private").disabled = true;

@@ -76,7 +76,8 @@ const TYPE = Object.freeze({
 	COPY: "copy",
 	SHARE: "share",
 	SOURCE: "source",
-	SMS: "sms"
+	SMS: "sms",
+	SHORT: "short"
 });
 
 // URL
@@ -94,6 +95,7 @@ const IS_THUNDERBIRD = Boolean(globalThis.messenger);
 const IS_CHROME = Object.getPrototypeOf(browser) !== Object.prototype;
 
 // communication type
+const CONTENT = "content";
 const UPDATE_CONTEXT_MENU = "updateContextMenu";
 const BACKGROUND = "background";
 
@@ -106,6 +108,7 @@ const settings = {
 	uri: null,
 	uris: null,
 	mails: null,
+	short: null,
 	https: null,
 	share: null,
 	single: null,
@@ -122,14 +125,17 @@ const settings = {
 
 const notifications = new Map();
 
+// Leaf node
+const LEAF = Symbol("leaf");
+
 let menuIsShown = false;
 
 let isAllowed = null;
 
 let pasteSymbol = null;
 
-let suffixes = null;
-let exceptions = null;
+let suffixes_pattern = null;
+let exceptions_pattern = null;
 
 
 /**
@@ -273,13 +279,13 @@ function punycode(hostname) {
  * @returns {boolean}
  */
 function validSuffix(hostname) {
-	if (settings.suffix && suffixes && hostname) {
+	if (settings.suffix && suffixes_pattern && hostname) {
 		const adomain = punycode(hostname);
-		const regexResult = suffixes.exec(adomain);
-		if (regexResult) {
-			const aregexResult = exceptions.exec(adomain);
+		const suffixResult = suffixes_pattern.exec(adomain);
+		if (suffixResult) {
+			const exceptionResult = exceptions_pattern.exec(adomain);
 			const labels = hostname.split(".");
-			const alabels = aregexResult ? aregexResult[1].split(".").slice(1) : regexResult[1].split(".");
+			const alabels = exceptionResult ? exceptionResult[1].split(".").slice(1) : suffixResult[1].split(".");
 			if (labels.length > alabels.length) {
 				console.log(hostname, alabels.join("."));
 				return true;
@@ -519,14 +525,6 @@ async function handleMenuShown(info, tab) {
 	console.log(info);
 	let text = info.selectionText;
 
-	// do not show menu entry when no text is selected
-	if (!text && !info.linkUrl) {
-		// await menus.removeAll();
-		// menuIsShown = false;
-		// menus.refresh();
-		return;
-	}
-
 	text &&= text.trim().normalize();
 
 	await buildMenu(text, info.linkUrl, tab);
@@ -546,10 +544,6 @@ async function handleMenuChoosen(info, tab) {
 	console.log(info);
 	let text = info.selectionText;
 	const { linkUrl } = info;
-
-	if (!text && !linkUrl) {
-		return;
-	}
 
 	text &&= text.trim().normalize();
 
@@ -793,6 +787,24 @@ async function handleMenuChoosen(info, tab) {
 				}
 			}
 			break;
+		case TYPE.SHORT:
+			if (amenuItemId === TYPE.COPY) {
+				browser.tabs.sendMessage(tab.id, { type: CONTENT }).then((message) => {
+					if (message.type === CONTENT) {
+						const { links } = message;
+						if (links.length) {
+							const [link] = links;
+							copyToClipboard(link, link);
+						} else {
+							console.error("Error: No short URLs found", links);
+						}
+						// console.log(message);
+					}
+				}).catch((error) => {
+					console.error(error);
+				});
+			}
+			break;
 	}
 
 	if (urls.length) {
@@ -860,6 +872,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 		let tel = null;
 		let urls = null;
 		let mails = null;
+		let links = null;
 
 		if (exampleText) {
 			const iri = IRIRE.exec(exampleText);
@@ -889,6 +902,17 @@ async function buildMenu(exampleText, linkUrl, tab) {
 			if (reURL.test(uri.protocol)) {
 				url = uri;
 			}
+		}
+
+		if (!IS_THUNDERBIRD) {
+			links = await browser.tabs.sendMessage(tab.id, { type: CONTENT }).then((message) => {
+				if (message.type === CONTENT) {
+					return message.links;
+					// console.log(message);
+				}
+			}).catch((error) => {
+				console.error(error);
+			});
 		}
 
 		if (settings.uri) {
@@ -967,7 +991,7 @@ async function buildMenu(exampleText, linkUrl, tab) {
 					enabled: avisible
 				});
 			}
-			if (linkUrl) {
+			if (!IS_CHROME && !settings.uri && linkUrl) {
 				await menus.update(`${aid}-${TYPE.LINK}`, {
 					title: `&Open Link${settings.livePreview && temp && !exampleText ? ` “${temp.replaceAll("&", "&&")}”` : ""}`,
 					visible: avisible && !exampleText
@@ -1039,6 +1063,12 @@ async function buildMenu(exampleText, linkUrl, tab) {
 					enabled: Boolean(tel) && navigator.canShare({ title: `Telephone Number shared with “${TITLE}”`, url: tel })
 				});
 			}
+		}
+		if (!IS_THUNDERBIRD && settings.short) {
+			await menus.update(`${TYPE.SHORT}-${TYPE.COPY}`, {
+				title: settings.livePreview && links?.length ? `Copy Short URL “${links[0].replaceAll("&", "&&")}”` : "Copy Short URL",
+				enabled: Boolean(links?.length)
+			});
 		}
 	} else {
 		if (settings.uri) {
@@ -1221,6 +1251,13 @@ async function buildMenu(exampleText, linkUrl, tab) {
 				});
 			}
 		}
+		if (!IS_THUNDERBIRD && settings.short) {
+			await menus.create({
+				id: `${TYPE.SHORT}-${TYPE.COPY}`,
+				title: "Copy Short URL",
+				contexts: ["page", "tab"]
+			});
+		}
 
 		menuIsShown = true;
 	}
@@ -1277,10 +1314,9 @@ function createRegEx(tree) {
 	const alternatives = [];
 	const characterClass = [];
 
-	for (const char in tree) {
+	for (const [char, atree] of Object.entries(tree)) {
 		if (char) {
-			const atree = tree[char];
-			if ("" in atree && Object.keys(atree).length === 1) {
+			if (LEAF in atree && Object.keys(atree).length === 0) {
 				characterClass.push(char);
 			} else {
 				const recurse = createRegEx(atree);
@@ -1295,7 +1331,7 @@ function createRegEx(tree) {
 
 	let result = alternatives.length === 1 ? alternatives[0] : `(?:${alternatives.join("|")})`;
 
-	if ("" in tree) {
+	if (LEAF in tree) {
 		if (characterClass.length || alternatives.length > 1) {
 			result += "?";
 		} else {
@@ -1328,7 +1364,7 @@ function createTree(arr) {
 		}
 
 		// Leaf node
-		temp[""] = true;
+		temp[LEAF] = true;
 	}
 
 	Object.freeze(tree);
@@ -1343,8 +1379,8 @@ function createTree(arr) {
  */
 function parsePSL(PSL) {
 	const start = performance.now();
-	suffixes = [];
-	exceptions = [];
+	const suffixes = [];
+	const exceptions = [];
 
 	for (const r of PSL) {
 		if (r.startsWith("!")) {
@@ -1356,15 +1392,15 @@ function parsePSL(PSL) {
 
 	// console.log(suffixes, exceptions);
 
-	suffixes = createTree(suffixes);
-	exceptions = createTree(exceptions);
+	const suffixes_re = createTree(suffixes);
+	const exceptions_re = createTree(exceptions);
 
-	console.log(suffixes, exceptions);
+	console.log(suffixes_re, exceptions_re);
 
-	suffixes = new RegExp(String.raw`(?:^|\.)(${suffixes})$`, "u");
-	exceptions = new RegExp(String.raw`(?:^|\.)(${exceptions})$`, "u");
+	suffixes_pattern = new RegExp(String.raw`(?:^|\.)(${suffixes_re})$`, "u");
+	exceptions_pattern = new RegExp(String.raw`(?:^|\.)(${exceptions_re})$`, "u");
 
-	// console.log(suffixes, exceptions);
+	// console.log(suffixes_pattern, exceptions_pattern);
 	const end = performance.now();
 	console.log(`The PSL was parsed in ${end - start} ms.`);
 }
@@ -1402,6 +1438,7 @@ async function setSettings(asettings) {
 	settings.uri = asettings.uri;
 	settings.uris = asettings.uris;
 	settings.mails = asettings.mails;
+	settings.short = asettings.short;
 	settings.https = asettings.https;
 	settings.share = asettings.share;
 	settings.single = asettings.single;

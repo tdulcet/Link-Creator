@@ -1,10 +1,19 @@
-// communication type
-const UPDATE_CONTEXT_MENU = "updateContextMenu";
+"use strict";
 
-document.addEventListener("selectionchange", () => {
-	const selection = document.getSelection().toString();
-	browser.runtime.sendMessage({
-		type: UPDATE_CONTEXT_MENU,
-		selection
-	});
+// communication type
+const CONTENT = "content";
+
+browser.runtime.onMessage.addListener((message) => {
+	if (message.type === CONTENT) {
+		const links = document.querySelectorAll("link[rel=shortlink],link[rel=shorturl]");
+
+		const response = {
+			type: CONTENT,
+			links: Array.from(links, (link) => link.href).filter(Boolean)
+		};
+		// console.log(response);
+
+		return Promise.resolve(response);
+
+	}
 });

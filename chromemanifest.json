@@ -21,7 +21,8 @@
       "all_frames": true,
       "js": [
         "browser-polyfill.js",
-        "content_script.js"
+        "content_script.js",
+        "chrome_content_script.js"
       ]
     }
   ],

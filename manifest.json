@@ -15,6 +15,14 @@
     "scripts": ["background.js"],
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content_script.js"
+      ]
+    }
+  ],
   "icons": {
     "32": "icons/icon_32.png",
     "64": "icons/icon_64.png",

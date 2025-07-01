@@ -18,6 +18,7 @@ Firefox, Chromium and Thunderbird add-on/WebExtension to open selected URIs, URL
 	* Automatically converts letters to numbers
 * Allows opening multiple URIs or e-mail addresses
 * Allows copying the formatted URI, URL, email address or telephone number to your clipboard
+* Allows copying the [short URL](https://microformats.org/wiki/rel-shortlink) on supported websites (Firefox and Chrome only)
 * Allows viewing the source of URLs (uses the `view-source:` URI)
 * Supports [Internationalized domain names](https://en.wikipedia.org/wiki/Internationalized_domain_name) (IDNs), [IRIs](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier) and [International email](https://en.wikipedia.org/wiki/International_email) addresses
 * Shows a live preview of the link(s) that would open
@@ -70,6 +71,7 @@ Follow [these instructions](https://extensionworkshop.com/documentation/develop/
 
 * [URL Link](https://github.com/fnxweb/urllink) (Firefox and Thunderbird)
 * [Text Link](https://github.com/piroor/textlink) (Firefox)
+* [Copy ShortURL](https://github.com/fwenzel/copy-shorturl) (Firefox)
 * [Link to Text Fragment](https://github.com/GoogleChromeLabs/link-to-text-fragment) (Chrome, Firefox and Safari)
 
 ## Contributing

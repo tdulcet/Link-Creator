@@ -19,6 +19,7 @@ const defaultSettings = {
 		uri: true,
 		uris: true,
 		mails: true,
+		short: true,
 		https: false,
 		share: false,
 		single: true,
