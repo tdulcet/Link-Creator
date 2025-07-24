@@ -1,15 +1,14 @@
 {
   "manifest_version": 2,
   "name": "Link Creator",
-  "version": "1.2",
+  "version": "1.3",
   "author": "Teal Dulcet",
 
   "description": "Open selected URIs, URLs, email addresses, telephone numbers and links.",
   "homepage_url": "https://github.com/tdulcet/Link-Creator",
 
   "options_ui": {
-    "page": "options/options.html",
-    "browser_style": true
+    "page": "options/options.html"
   },
   "background": {
     "scripts": ["background.js"],
